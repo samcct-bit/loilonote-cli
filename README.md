@@ -137,9 +137,9 @@ loilonote note text <id>     # 提取筆記文字
 ```
 loilonote-cli/
 ├── packages/
-│   ├── core/       # @loilonote/core — API client、認證、型別
-│   ├── cli/        # @loilonote/cli — 命令列介面（commander.js）
-│   └── mcp/        # @loilonote/mcp — MCP Server（自包含，可獨立安裝）
+│   ├── core/       # @samcct-bit/loilonote-core — API client、認證、型別
+│   ├── cli/        # @samcct-bit/loilonote-cli — 命令列介面（commander.js）
+│   └── mcp/        # @samcct-bit/loilonote-mcp — MCP Server（自包含，可獨立安裝）
 ├── docs/
 │   └── architecture.md  # 架構設計文件
 └── rdq/

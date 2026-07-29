@@ -35,18 +35,18 @@ loilonote/
 ├── docs/                     # 設計文件
 │   └── architecture.md       # 架構設計文件
 └── packages/
-    ├── core/                 # @loilonote/core — API client & auth
+    ├── core/                 # @samcct-bit/loilonote-core — API client & auth
     │   └── src/
     │       ├── index.ts
     │       ├── types.ts
     │       ├── config.ts
     │       ├── auth.ts
     │       └── client.ts
-    ├── cli/                  # @loilonote/cli — 命令列介面
+    ├── cli/                  # @samcct-bit/loilonote-cli — 命令列介面
     │   └── src/
     │       ├── index.ts
     │       └── cli.ts
-    └── mcp/                  # @loilonote/mcp — MCP Server
+    └── mcp/                  # @samcct-bit/loilonote-mcp — MCP Server
         └── src/
             ├── index.ts
             ├── entry.ts

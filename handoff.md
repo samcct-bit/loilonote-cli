@@ -3,7 +3,12 @@
 > 任何 Agent、任何電腦接手前**必讀**；收工時**必更新**。
 
 ## ⏯️ 目前做到哪
-Antigravity 修復全域安裝 Bug（bin 指向 + hashbang），CLI/MCP 已分離為兩個獨立指令。Repo 已同步。
+npm scope 已從 @loilonote 更換為 @samcct-bit。Antigravity 修復了全域安裝 Bug 與 CLI/MCP 分離。
+
+### 套件名稱
+- `@samcct-bit/loilonote-core`
+- `@samcct-bit/loilonote-cli`
+- `@samcct-bit/loilonote-mcp`
 
 ### 安裝後可用命令
 ```
