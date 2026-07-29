@@ -3,22 +3,25 @@
 > 任何 Agent、任何電腦接手前**必讀**；收工時**必更新**。
 
 ## ⏯️ 目前做到哪
-Repo 已公開（https://github.com/samcct-bit/loilonote-cli），MCP 自包含打包完成，README/MIT License 就緒。任何人可 `npm install -g github:samcct-bit/loilonote-cli` 一鍵安裝。
+Antigravity 修復全域安裝 Bug（bin 指向 + hashbang），CLI/MCP 已分離為兩個獨立指令。Repo 已同步。
+
+### 安裝後可用命令
+```
+loilonote login              # CLI 登入
+loilonote course list        # CLI 課程列表
+loilonote note list <id>     # CLI 筆記列表
+loilonote note inspect <id>  # CLI 解析筆記
+loilonote note text <id>     # CLI 提取文字
+loilonote-mcp                # 啟動 MCP Server（給 AI Agent）
+```
 
 ## 🚦 目前狀態
-可發布使用。10 CLI 命令 + 8 MCP tools + CDP 自動登入，全 TypeScript 零錯誤。OpenCode 已可透過 MCP 直接操作 Loilonote。
+全域安裝測試通過（`loilonote --help` 正常），可對外發布使用。
 
 ## ➡️ 下一步
-1. 在新機器上測試 `npm install -g github:samcct-bit/loilonote-cli` 安裝流程
+1. 測試 `npm install -g github:samcct-bit/loilonote-cli` 從零安裝流程
 2. 測試其他 AI Agent（Claude Code / ChatGPT）的 MCP 整合
-3. （可選）發布到 npm registry：`npm publish --access public`
-
-## ⚠️ 注意事項
-- API base: `https://n.loilo.tv/api/`，auth_token 放 URL query param
-- Token 效期 24 小時，無 refresh，過期需重登
-- 筆記內容為 ZIP 二進位（非 JSON），內含 version/header/body
-- MCP server 為 stdio transport，需 AI Host 啟動子行程
-- CDP 登入需要 Chrome 瀏覽器
+3. 補完 CLI 的 `loilonote config` 命令（目前無獨立 config 管理）
 
 ## 🕐 最後更新
 - 時間：2026-07-30 01:37
