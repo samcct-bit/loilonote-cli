@@ -113,18 +113,29 @@ export class LoilonoteClient {
   }
 
   /**
-   * 列出筆記中的所有媒體資源（圖片/PDF/音訊的 remote_id）
+   * 列出筆記中的所有媒體資源（圖片/PDF/背景圖的 remote_id）
    */
   extractAssets(parsed: ParsedNote): { frameId: string; frameType: string; remoteId: string }[] {
     const assets: { frameId: string; frameType: string; remoteId: string }[] = [];
     for (const frame of parsed.body.data.frames) {
       const gadgets = frame.gadgets as Record<string, unknown>;
+
+      // drawn gadget: picture/PDF embedded asset
       if (gadgets.drawn) {
         const drawn = gadgets.drawn as Record<string, unknown>;
-        if (drawn.asset) {
-          const asset = drawn.asset as Record<string, unknown>;
-          if (asset.remote_id && typeof asset.remote_id === 'string') {
-            assets.push({ frameId: frame.id, frameType: frame.type, remoteId: asset.remote_id });
+        const asset = drawn.asset as Record<string, unknown> | undefined;
+        if (asset?.remote_id && typeof asset.remote_id === 'string') {
+          assets.push({ frameId: frame.id, frameType: frame.type, remoteId: asset.remote_id });
+        }
+      }
+
+      // bgm gadget: background image asset
+      if (gadgets.bgm) {
+        const bgm = gadgets.bgm as Record<string, unknown>;
+        if (bgm.image) {
+          const img = bgm.image as Record<string, unknown> | undefined;
+          if (img?.remote_id && typeof img.remote_id === 'string') {
+            assets.push({ frameId: frame.id, frameType: `${frame.type}-bg`, remoteId: img.remote_id });
           }
         }
       }
