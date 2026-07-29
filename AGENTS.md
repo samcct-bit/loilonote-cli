@@ -18,6 +18,7 @@
   - [x] API client 實作
   - [x] MCP server（8 個 tools）
   - [x] 筆記 ZIP 解析（inspect/text 命令）
+  - [x] CDP 自動登入
 
 ## 資料夾結構
 ```
