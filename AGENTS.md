@@ -9,11 +9,26 @@
 暫無。
 
 ## 目標與路線圖
-- [ ] 階段一：需求探索與技術調查
+- [x] 階段一：需求探索與技術調查
 - [ ] 階段二：MCP/CLI 架構設計與實作
+  - [x] RDQ 需求訪談
+  - [x] 架構設計文件（docs/architecture.md）
+  - [ ] API 逆向驗證
+  - [ ] monorepo 專案骨架
+  - [ ] MVP 實作
 
 ## 資料夾結構
-（專案初始化時為空目錄，結構隨開發進度更新）
+```
+loilonote/
+├── AGENTS.md                 # 專案藍圖
+├── handoff.md                # 交接檔
+├── .gitignore
+├── rdq/                      # RDQ 需求規格卡
+│   └── RDQ-spec-loilonote-arch-20260729.md
+└── docs/                     # 設計文件
+    └── architecture.md       # 架構設計文件（已完成）
+```
+（結構隨開發進度更新）
 
 ## 同步層級（本專案初始化至第 3 層級）
 
