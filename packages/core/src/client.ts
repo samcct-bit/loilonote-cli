@@ -1,7 +1,7 @@
 import { getToken } from './config.js';
 import type {
   NotesListResponse, SubmissionsResponse, LoilonoteSession,
-  CourseGroup, Course, ParsedNote, NoteBody, NoteHeader, NoteFrame,
+  CourseGroup, CourseDetail, ParsedNote, NoteBody, NoteHeader,
 } from './types.js';
 
 export class LoilonoteClient {
@@ -70,7 +70,7 @@ export class LoilonoteClient {
     return this.request('/api/courses/v3');
   }
 
-  async getCourse(courseId: number): Promise<Course> {
+  async getCourse(courseId: number): Promise<CourseDetail> {
     return this.request(`/api/courses/${courseId}`);
   }
 

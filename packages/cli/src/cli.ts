@@ -78,12 +78,36 @@ course
 
 course
   .command('get <id>')
-  .description('取得課程內容')
+  .description('取得課程詳細內容')
   .action(async (id: string) => {
     const client = new LoilonoteClient();
     try {
-      const result = await client.getCourse(Number(id));
-      console.log(JSON.stringify(result, null, 2));
+      const c = await client.getCourse(Number(id));
+      console.log(`課程: ${c.name}`);
+      console.log(`班級: ${c.user_group_name} (${c.user_group_code})`);
+      console.log(`學年: ${c.academic_year}`);
+      console.log(`期間: ${c.course_start_at} ~ ${c.course_finish_at}`);
+      console.log(`教師: ${c.teachers.map(t => t.display_name).join(', ')}`);
+      console.log(`學生: ${c.students.length} 人`);
+      console.log(`當前作業: #${c.current_submission_number}「${c.submission_message}」`);
+      console.log(`畫面鎖定: ${c.is_screen_locked ? '是' : '否'}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`錯誤：${message}`);
+      process.exit(1);
+    }
+  });
+
+course
+  .command('students <id>')
+  .description('列出課程學生名單')
+  .action(async (id: string) => {
+    const client = new LoilonoteClient();
+    try {
+      const c = await client.getCourse(Number(id));
+      for (const s of c.students) {
+        console.log(`  ${s.sort_key?.padEnd(4) ?? '    '} ${s.display_name.padEnd(16)} ${s.username.split('@')[0]}`);
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`錯誤：${message}`);

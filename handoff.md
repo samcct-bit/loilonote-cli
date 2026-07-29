@@ -3,27 +3,30 @@
 > 任何 Agent、任何電腦接手前**必讀**；收工時**必更新**。本檔只放交接必需的精簡資訊，詳細脈絡放 Obsidian（若有 L3）。
 
 ## ⏯️ 目前做到哪
-CLI 三命令全線實測通過（course list / note list / submissions）。API client 已對齊真實 n.loilo.tv 端點。
+API client 完整可用。CLI 支援 9 個命令，MCP server 8 個 tools。筆記 ZIP 解析完成（支援結構檢視與文字提取）。
 
-### 已驗證端點（實測成功）
-- `GET /api/courses/v3` → 課程列表（按班級分組）
-- `GET /api/courses/:id/submissions/v2` → 繳交作業列表
-- `GET /api/notes/v2?course_id=X` → 筆記列表（含縮圖）
-- `GET /api/notes/:id` → 筆記內容（ZIP 二進位）
-- `POST /api/apps/authenticate` → 驗證用（未實測）
+### 已驗證命令（全線實測通過）
+```
+loilonote login --token <t>     loilonote course list
+loilonote course get <id>       loilonote course students <id>
+loilonote note list <cId>       loilonote note get <id>
+loilonote note inspect <id>     loilonote note text <id>
+loilonote submissions <id>      loilonote config
+```
+
+### MCP Tools（8 個）
+```
+course_list, note_list, note_info, note_inspect, note_text,
+note_download, submission_list
+```
 
 ## 🚦 目前狀態
-Core/client 已可用。CLI 三個命令驗證通過。MCP server 待重構。
+Core/CLI/MCP 三套件全部可用，TypeScript 零錯誤。已實測連線。
 
 ## ➡️ 下一步
-1. 重構 MCP server 對齊新 API（course/note/submission tools）
-2. 實作 ZIP 筆記內容解析（loilonote 內部格式）
-3. 處理 note get 的圖片/卡片/多媒體內容提取
-
-## ⚠️ 注意事項
-- API base: `https://n.loilo.tv/api/`
-- auth_token 放 URL query param，24h 有效
-- 筆記內容為 ZIP 二進位檔（非 JSON）
+1. 解決 PowerShell/終端中文編碼顯示問題
+2. 補完 note 的 pdf 類型解析（目前僅支援 title/picture）
+3. 實作 OAuth PKCE 自動登入流程（取代手動複製 token）
 
 ## 🕐 最後更新
 - 時間：2026-07-29 23:09

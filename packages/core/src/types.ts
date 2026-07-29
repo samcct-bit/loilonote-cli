@@ -32,6 +32,50 @@ export interface Course {
   is_authorized: boolean;
 }
 
+export interface UserProfile {
+  id: number;
+  username: string;
+  sort_key: string | null;
+  first_name: string;
+  last_name: string;
+  display_name: string;
+  lang: string;
+  is_teacher: boolean;
+  is_admin: boolean;
+  is_graduated: boolean;
+  graduated_at: string | null;
+}
+
+export interface CourseDetail {
+  name: string;
+  user_group_id: number;
+  user_group_name: string;
+  user_group_code: string;
+  user_group_start_at: string | null;
+  user_group_finish_at: string | null;
+  subject_id: number;
+  course_start_at: string;
+  course_finish_at: string;
+  academic_year: number;
+  teachers: UserProfile[];
+  students: UserProfile[];
+  submission_message: string;
+  current_submission_number: number;
+  document_groups: {
+    common_group_id: number;
+    common_group_has_contents: boolean;
+    class_group_ids: { id: number; name: string }[];
+  };
+  is_tunnel_enabled: boolean;
+  autolock_tunnel_at: string | null;
+  default_tunnel_duration: number;
+  is_screen_locked: boolean;
+  screen_sharing_id: string | null;
+  shared_note_unlock_start_at: string;
+  shared_note_unlock_finish_at: string | null;
+  is_shared_note_unlocked: boolean;
+}
+
 export interface CourseGroup {
   user_group_id: number;
   user_group_name: string;
