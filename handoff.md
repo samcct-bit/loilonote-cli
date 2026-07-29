@@ -30,6 +30,6 @@ loilonote-mcp                # 啟動 MCP Server（給 AI Agent）
 3. 收集使用者回饋，進行後續改版
 
 ## 🕐 最後更新
-- 時間：2026-07-30 01:37
-- 更新者：OpenCode @ LAPTOP-5SNCALUU
+- 時間：2026-07-30 02:50
+- 更新者：Antigravity Agent
 - Git push：✅ 已推（samcct-bit/loilonote-cli，公開）
