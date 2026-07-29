@@ -58,7 +58,7 @@ loilonote/
 | 層級 | 平台 | 位置 | 讀取時機 |
 |------|------|------|---------|
 | L1 | 本地 | `AGENTS.md`＋`handoff.md` | 每個 session |
-| L2 | GitHub | samcct-bit/loilonote-cli | 指定時 |
+| L2 | GitHub | samcct-bit/loilonote-cli（公開） | 指定時 |
 | L3 | Obsidian | Loilonote cli/專案工作流程.md | 有需要時 |
 | Obsidian Vault | 本地 | d:\antigravity\2026antigravity\SecondBrain\SecondBrain | — |
 

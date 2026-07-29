@@ -13,7 +13,7 @@ loilonote-mcp login
 → 加到任意 AI Agent 的 MCP 設定即可使用
 
 ## 🚦 目前狀態
-可發布。repo 目前為私有，需設為公開才能讓外界安裝。
+Repo 已公開，任何人可安裝。npm install -g github:samcct-bit/loilonote-cli
 
 ## ➡️ 下一步
 1. 將 GitHub repo 設為公開
