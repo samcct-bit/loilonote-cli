@@ -22,9 +22,28 @@ export class AuthManager {
     return this.session;
   }
 
+  setToken(token: string): void {
+    this.token = token;
+    const config = loadConfig();
+    config.auth.token = token;
+    saveConfig(config);
+  }
+
+  /**
+   * 驗證 token 是否有效（呼叫 /api/courses/v3 測試）
+   */
+  async validate(baseUrl: string = 'https://n.loilo.tv'): Promise<boolean> {
+    if (!this.token) return false;
+    try {
+      const response = await fetch(`${baseUrl}/api/courses/v3?auth_token=${encodeURIComponent(this.token)}`);
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
   /**
    * 登入：POST /api/apps/authenticate
-   * 傳入 app_id 與 OAuth token，換回 auth_token + session info
    */
   async login(appId: string, oauthToken: string, baseUrl: string = 'https://n.loilo.tv'): Promise<LoilonoteSession> {
     const response = await fetch(`${baseUrl}/api/apps/authenticate`, {
@@ -40,16 +59,8 @@ export class AuthManager {
 
     this.session = await response.json() as LoilonoteSession;
     this.token = oauthToken;
-    this.saveState();
+    this.setToken(oauthToken);
     return this.session;
-  }
-
-  /**
-   * 直接設定 token（從環境變數或其他來源取得，跳過登入流程）
-   */
-  setToken(token: string): void {
-    this.token = token;
-    this.saveState();
   }
 
   logout(): void {
@@ -58,12 +69,6 @@ export class AuthManager {
     const config = loadConfig();
     config.auth.token = null;
     config.auth.tokenFile = null;
-    saveConfig(config);
-  }
-
-  private saveState(): void {
-    const config = loadConfig();
-    config.auth.token = this.token;
     saveConfig(config);
   }
 }

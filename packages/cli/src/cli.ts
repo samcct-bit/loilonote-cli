@@ -12,18 +12,79 @@ program
 // --- Auth ---
 program
   .command('login')
-  .description('登入 Loilonote')
-  .option('--token <token>', 'auth_token（從瀏覽器 DevTools 取得）')
+  .description('登入 Loilonote（互動式）')
+  .option('--token <token>', '直接指定 auth_token（跳過互動式流程）')
   .action(async (opts: { token?: string }) => {
     if (opts.token) {
       const auth = new AuthManager();
       auth.setToken(opts.token);
-      console.log('已設定 token');
+      const valid = await auth.validate();
+      if (valid) {
+        console.log('登入成功（token 有效）');
+      } else {
+        console.error('Token 無效，請重新取得');
+        process.exit(1);
+      }
       return;
     }
-    console.error('請提供 --token <token>');
-    console.error('取得方式：登入 loilonote.app → DevTools → Network → 任意 n.loilo.tv/api 請求 → 複製 auth_token 參數');
-    process.exit(1);
+
+    console.log('正在打開瀏覽器...');
+    const { exec } = await import('node:child_process');
+    const openCmd = process.platform === 'win32'
+      ? 'start "" "https://loilonote.app/login"'
+      : process.platform === 'darwin'
+        ? 'open "https://loilonote.app/login"'
+        : 'xdg-open "https://loilonote.app/login"';
+    exec(openCmd);
+
+    console.log('');
+    console.log('═══ 登入 Loilonote ═══');
+    console.log('');
+    console.log('1. 在瀏覽器中完成登入（Google / Microsoft）');
+    console.log('2. 登入後，按 F12 打開 DevTools');
+    console.log('3. 切換到 Console 分頁');
+    console.log('4. 貼上以下程式碼並按 Enter：');
+    console.log('');
+    console.log('  ┌─────────────────────────────────────┐');
+    console.log('  │ const f=window.fetch;window.fetch=   │');
+    console.log('  │ function(u,...a){const m=(""+u)      │');
+    console.log('  │ .match(/auth_token=([A-Za-z0-9_-]    │');
+    console.log('  │ {10,})/);if(m){copy(m[1]);alert     │');
+    console.log('  │ ("已複製！貼回終端機")};return       │');
+    console.log('  │ f.apply(this,[u,...a])};             │');
+    console.log('  │ console.log("現在點任何頁面，token   │');
+    console.log('  │ 自動複製到剪貼簿")                   │');
+    console.log('  └─────────────────────────────────────┘');
+    console.log('');
+    console.log('5. 回到 Loilonote 頁面，隨便點一個筆記或課程');
+    console.log('6. 看到「已複製」提示後，回到這裡貼上：');
+
+    const readline = (await import('node:readline')).createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    const token = await new Promise<string>((resolve) => {
+      readline.question('auth_token: ', (answer: string) => {
+        readline.close();
+        resolve(answer.trim());
+      });
+    });
+
+    if (!token) {
+      console.error('未輸入 token');
+      process.exit(1);
+    }
+
+    const auth = new AuthManager();
+    auth.setToken(token);
+    const valid = await auth.validate();
+    if (valid) {
+      console.log('登入成功！Token 已儲存至 ~/.loilonote/config.json');
+    } else {
+      console.error('Token 無效，請確認後重試');
+      process.exit(1);
+    }
   });
 
 program
@@ -187,6 +248,25 @@ note
       const parsed = await client.getParsedNote(Number(id));
       const text = client.extractText(parsed);
       console.log(text || '(無文字內容)');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`錯誤：${message}`);
+      process.exit(1);
+    }
+  });
+
+note
+  .command('assets <id>')
+  .description('列出筆記中的媒體資源（圖片/PDF）')
+  .action(async (id: string) => {
+    const client = new LoilonoteClient();
+    try {
+      const parsed = await client.getParsedNote(Number(id));
+      const assets = client.extractAssets(parsed);
+      for (const a of assets) {
+        console.log(`${a.frameType.padEnd(8)} ${a.remoteId}  (frame: ${a.frameId.slice(0,8)}...)`);
+      }
+      if (assets.length === 0) console.log('(無媒體資源)');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`錯誤：${message}`);

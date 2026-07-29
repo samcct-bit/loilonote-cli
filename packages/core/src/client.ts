@@ -113,8 +113,24 @@ export class LoilonoteClient {
   }
 
   /**
-   * 從已解析筆記中提取純文字內容
+   * 列出筆記中的所有媒體資源（圖片/PDF/音訊的 remote_id）
    */
+  extractAssets(parsed: ParsedNote): { frameId: string; frameType: string; remoteId: string }[] {
+    const assets: { frameId: string; frameType: string; remoteId: string }[] = [];
+    for (const frame of parsed.body.data.frames) {
+      const gadgets = frame.gadgets as Record<string, unknown>;
+      if (gadgets.drawn) {
+        const drawn = gadgets.drawn as Record<string, unknown>;
+        if (drawn.asset) {
+          const asset = drawn.asset as Record<string, unknown>;
+          if (asset.remote_id && typeof asset.remote_id === 'string') {
+            assets.push({ frameId: frame.id, frameType: frame.type, remoteId: asset.remote_id });
+          }
+        }
+      }
+    }
+    return assets;
+  }
   extractText(parsed: ParsedNote): string {
     const texts: string[] = [];
     for (const frame of parsed.body.data.frames) {
