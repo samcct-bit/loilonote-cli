@@ -20,6 +20,6 @@
 - Token 24h 過期，重登：`loilonote login`
 
 ## 🕐 最後更新
-- 時間：2026-07-30 02:48
-- 更新者：OpenCode @ LAPTOP-5SNCALUU
-- Git push：待推
+- 時間：2026-07-30 02:50
+- 更新者：OpenCode @ LAPTOP-5SNCALUU（與 Antigravity 協作）
+- Git push：✅ 已推（samcct-bit/loilonote-cli，公開）
