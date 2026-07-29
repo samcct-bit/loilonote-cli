@@ -21,12 +21,13 @@ loilonote-mcp                # 啟動 MCP Server（給 AI Agent）
 ```
 
 ## 🚦 目前狀態
-全域安裝測試通過（`loilonote --help` 正常），可對外發布使用。
+可發布使用。10 CLI 命令 + 8 MCP tools + CDP 自動登入，全 TypeScript 零錯誤。
+已成功將 scope 改為 `@samcct-bit` 並發布至 npm registry。
 
 ## ➡️ 下一步
-1. 測試 `npm install -g github:samcct-bit/loilonote-cli` 從零安裝流程
-2. 測試其他 AI Agent（Claude Code / ChatGPT）的 MCP 整合
-3. 補完 CLI 的 `loilonote config` 命令（目前無獨立 config 管理）
+1. 測試其他 AI Agent（Claude Code / ChatGPT / Cursor 等）透過 `npx -y @samcct-bit/loilonote-mcp` 的掛載整合
+2. 持續擴充新的 Loilonote API 或功能（如發布作業、修改筆記等）
+3. 收集使用者回饋，進行後續改版
 
 ## 🕐 最後更新
 - 時間：2026-07-30 01:37

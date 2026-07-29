@@ -7,7 +7,7 @@
 ## 安裝
 
 ```bash
-npm install -g github:samcct-bit/loilonote-cli
+npm install -g @samcct-bit/loilonote-cli
 ```
 
 需求：Node.js 22+、Chrome 瀏覽器（登入用）
@@ -17,7 +17,7 @@ npm install -g github:samcct-bit/loilonote-cli
 ### 1. 登入
 
 ```bash
-loilonote-mcp login
+loilonote login
 ```
 
 自動打開 Chrome 瀏覽器，在 Loilonote 完成 Google / Microsoft 登入後，token 自動擷取並儲存至 `~/.loilonote/config.json`。
@@ -37,7 +37,7 @@ loilonote-mcp login
   "mcp": {
     "loilonote": {
       "type": "local",
-      "command": ["loilonote-mcp"],
+      "command": ["npx", "-y", "@samcct-bit/loilonote-mcp"],
       "enabled": true
     }
   }
@@ -54,7 +54,7 @@ loilonote-mcp login
   "mcpServers": {
     "loilonote": {
       "command": "npx",
-      "args": ["loilonote-mcp"]
+      "args": ["-y", "@samcct-bit/loilonote-mcp"]
     }
   }
 }
@@ -69,7 +69,7 @@ loilonote-mcp login
   "mcpServers": {
     "loilonote": {
       "command": "npx",
-      "args": ["loilonote-mcp"]
+      "args": ["-y", "@samcct-bit/loilonote-mcp"]
     }
   }
 }
@@ -84,7 +84,7 @@ loilonote-mcp login
   "servers": {
     "loilonote": {
       "command": "npx",
-      "args": ["loilonote-mcp"]
+      "args": ["-y", "@samcct-bit/loilonote-mcp"]
     }
   }
 }
@@ -98,7 +98,7 @@ loilonote-mcp login
 mcp_servers:
   loilonote:
     command: npx
-    args: ["loilonote-mcp"]
+    args: ["-y", "@samcct-bit/loilonote-mcp"]
 ```
 </details>
 
