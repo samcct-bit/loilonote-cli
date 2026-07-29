@@ -1,5 +1,8 @@
 import { getToken } from './config.js';
-import type { NotesListResponse, SubmissionsResponse, LoilonoteSession, CourseGroup, Course } from './types.js';
+import type {
+  NotesListResponse, SubmissionsResponse, LoilonoteSession,
+  CourseGroup, Course, ParsedNote, NoteBody, NoteHeader, NoteFrame,
+} from './types.js';
 
 export class LoilonoteClient {
   private baseUrl: string;
@@ -82,6 +85,55 @@ export class LoilonoteClient {
     const response = await fetch(fullUrl);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.arrayBuffer();
+  }
+
+  /**
+   * 下載並解析筆記 ZIP 內容
+   */
+  async getParsedNote(noteId: number): Promise<ParsedNote> {
+    const data = await this.getNote(noteId);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const AdmZip = (await import('adm-zip')).default;
+    const zip = new AdmZip(Buffer.from(data));
+
+    const version = parseInt(zip.readAsText('version').trim(), 10);
+    const header: NoteHeader = JSON.parse(zip.readAsText('header'));
+    const body: NoteBody = JSON.parse(zip.readAsText('body'));
+
+    const frameTypes = body.data.frames.map(f => f.type);
+    const uniqueTypes = [...new Set(frameTypes)];
+
+    return {
+      version,
+      header,
+      body,
+      frameCount: body.data.frames.length,
+      frameTypes: uniqueTypes,
+    };
+  }
+
+  /**
+   * 從已解析筆記中提取純文字內容
+   */
+  extractText(parsed: ParsedNote): string {
+    const texts: string[] = [];
+    for (const frame of parsed.body.data.frames) {
+      const gadgets = frame.gadgets as Record<string, unknown>;
+      // 遍歷所有 gadget 找文字內容
+      for (const key of Object.keys(gadgets)) {
+        const gadget = gadgets[key] as Record<string, unknown> | undefined;
+        if (!gadget) continue;
+        // text gadget
+        if (gadget.text && typeof gadget.text === 'string') {
+          texts.push(gadget.text);
+        }
+        // rich text / html content
+        if (gadget.html && typeof gadget.html === 'string') {
+          texts.push(gadget.html.replace(/<[^>]+>/g, ''));
+        }
+      }
+    }
+    return texts.join('\n---\n');
   }
 
   // --- Submissions ---

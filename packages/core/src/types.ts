@@ -104,8 +104,49 @@ export interface LoilonoteConfig {
   };
 }
 
-export interface TokenStorage {
-  token: string;
-  session: LoilonoteSession;
-  storedAt: string;
+// --- Note ZIP internal format ---
+
+export interface NoteHeader {
+  format: string;
+  format_version: string;
+  updater: {
+    id: number;
+    device_id: string;
+  };
+}
+
+export interface NoteFrame {
+  id: string;
+  type: string;
+  content: {
+    margins?: { left: number; top: number; bottom: number; right: number };
+    backcolor?: string;
+    size: { width: number; height: number };
+  };
+  metadata: {
+    position: { left: number; top: number };
+    author: { id: number; name: string };
+    duration: number;
+    layout_size: { width: number; height: number };
+    unlimited_recording_time?: boolean;
+    playback_rate?: number;
+  };
+  gadgets: Record<string, unknown>;
+}
+
+export interface NoteBody {
+  format: string;
+  version: string;
+  data: {
+    metadata: { created_by: string };
+    frames: NoteFrame[];
+  };
+}
+
+export interface ParsedNote {
+  version: number;
+  header: NoteHeader;
+  body: NoteBody;
+  frameCount: number;
+  frameTypes: string[];
 }

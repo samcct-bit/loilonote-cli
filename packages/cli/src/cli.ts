@@ -130,6 +130,46 @@ note
     }
   });
 
+note
+  .command('inspect <id>')
+  .description('解析筆記結構（版本、卡片類型、頁數）')
+  .action(async (id: string) => {
+    const client = new LoilonoteClient();
+    try {
+      const parsed = await client.getParsedNote(Number(id));
+      console.log(`版本: ${parsed.version}`);
+      console.log(`格式: ${parsed.body.format} (v${parsed.body.version})`);
+      console.log(`最後編輯: ${parsed.header.updater.id} (device: ${parsed.header.updater.device_id})`);
+      console.log(`卡片數: ${parsed.frameCount}`);
+      console.log(`卡片類型: ${parsed.frameTypes.join(', ')}`);
+      console.log(`\n各卡片概覽:`);
+      for (const f of parsed.body.data.frames) {
+        const gadgets = Object.keys(f.gadgets).join(', ');
+        console.log(`  [${f.type}] ${f.id.slice(0,8)}...  position:(${f.metadata.position.left.toFixed(0)},${f.metadata.position.top.toFixed(0)})  gadgets: ${gadgets || '(無)'}`);
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`錯誤：${message}`);
+      process.exit(1);
+    }
+  });
+
+note
+  .command('text <id>')
+  .description('從筆記中提取純文字內容')
+  .action(async (id: string) => {
+    const client = new LoilonoteClient();
+    try {
+      const parsed = await client.getParsedNote(Number(id));
+      const text = client.extractText(parsed);
+      console.log(text || '(無文字內容)');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`錯誤：${message}`);
+      process.exit(1);
+    }
+  });
+
 // --- Submissions ---
 program
   .command('submissions <courseId>')
