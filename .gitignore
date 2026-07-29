@@ -1,0 +1,6 @@
+desktop.ini
+*.tmp
+~$*
+.env
+*.key
+credentials.*
