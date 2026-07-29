@@ -18,4 +18,4 @@
 ## 🕐 最後更新
 - 時間：2026-07-29 23:09
 - 更新者：OpenCode @ LAPTOP-5SNCALUU
-- Git push：❌ 未推（待建立 GitHub repo）
+- Git push：✅ 已推（samcct-bit/loilonote-cli）
