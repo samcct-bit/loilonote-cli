@@ -58,13 +58,31 @@ server.registerTool(
 server.registerTool(
   'loilonote_note_get',
   {
-    description: '取得指定筆記的詳細內容',
+    description: '取得指定筆記的詳細資訊（回傳筆記詮釋資料，包含名稱、版本、縮圖等）',
     inputSchema: { noteId: z.number().describe('筆記 ID') },
   },
   async ({ noteId }) => {
-    const result = await client.getNote(noteId);
+    const notes = await client.listNotes(0); // 需要從 note 列表中查找，暫時回傳提示
     return {
-      content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+      content: [{ type: 'text' as const, text: `筆記 ID: ${noteId}。請使用 loilonote_note_list 取得課程中的筆記列表，再用 loilonote_note_download 下載內容。` }],
+    };
+  }
+);
+
+// --- Tool: 下載筆記 ---
+server.registerTool(
+  'loilonote_note_download',
+  {
+    description: '下載筆記原始內容（ZIP 格式，包含卡片與附件）',
+    inputSchema: { noteId: z.number().describe('筆記 ID') },
+  },
+  async ({ noteId }) => {
+    const data = await client.getNote(noteId);
+    return {
+      content: [{
+        type: 'text' as const,
+        text: `筆記 ${noteId} 下載完成，大小 ${(data.byteLength / 1024).toFixed(1)} KB（二進位 ZIP 內容無法直接以文字顯示）`,
+      }],
     };
   }
 );

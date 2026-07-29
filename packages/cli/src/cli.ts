@@ -9,23 +9,21 @@ program
   .description('Loilonote School CLI')
   .version('0.1.0');
 
-// --- Auth commands ---
+// --- Auth ---
 program
   .command('login')
   .description('登入 Loilonote')
-  .requiredOption('--app-id <id>', 'app_id（如 loilonote-push）')
-  .requiredOption('--token <token>', 'OAuth auth_token')
-  .action(async (opts: { appId: string; token: string }) => {
-    const auth = new AuthManager();
-    try {
-      const session = await auth.login(opts.appId, opts.token);
-      console.log(`登入成功：${session.display_name}（${session.school_name}）`);
-      console.log(`有效期至：${session.expired_at}`);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`登入失敗：${message}`);
-      process.exit(1);
+  .option('--token <token>', 'auth_token（從瀏覽器 DevTools 取得）')
+  .action(async (opts: { token?: string }) => {
+    if (opts.token) {
+      const auth = new AuthManager();
+      auth.setToken(opts.token);
+      console.log('已設定 token');
+      return;
     }
+    console.error('請提供 --token <token>');
+    console.error('取得方式：登入 loilonote.app → DevTools → Network → 任意 n.loilo.tv/api 請求 → 複製 auth_token 參數');
+    process.exit(1);
   });
 
 program
@@ -48,9 +46,9 @@ program
       console.log(`教師: ${session.is_teacher ? '是' : '否'}`);
       console.log(`Token 有效至: ${session.expired_at}`);
     } else if (auth.isAuthenticated()) {
-      console.log('已設定 token（無 session 資訊）');
+      console.log('已設定 token（無 session 資訊，執行 loilonote course list 測試連線）');
     } else {
-      console.log('未登入。執行 loilonote login --app-id <id> --token <token>');
+      console.log('未登入。執行 loilonote login --token <token>');
     }
   });
 
@@ -59,12 +57,18 @@ const course = program.command('course');
 
 course
   .command('list')
-  .description('列出課程')
+  .description('列出所有課程')
   .action(async () => {
     const client = new LoilonoteClient();
     try {
       const result = await client.listCourses();
-      console.log(JSON.stringify(result, null, 2));
+      const groups = Array.isArray(result) ? result : [result];
+      for (const group of groups) {
+        console.log(`\n📂 ${group.user_group_name}`);
+        for (const c of group.courses) {
+          console.log(`  [${c.course_id}] ${c.name}  ${c.in_charge ? '(教師)' : ''}`);
+        }
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`錯誤：${message}`);
@@ -98,7 +102,7 @@ note
     try {
       const result = await client.listNotes(Number(courseId));
       for (const n of result.notes) {
-        console.log(`[${n.id}] ${n.name}  v${n.version}  ${n.created_at}`);
+        console.log(`[${n.id}] ${n.name}  v${n.version}  ${n.updated_at}`);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -109,12 +113,16 @@ note
 
 note
   .command('get <id>')
-  .description('取得筆記內容')
-  .action(async (id: string) => {
+  .description('下載筆記（ZIP）')
+  .option('-o, --output <path>', '輸出路徑')
+  .action(async (id: string, opts: { output?: string }) => {
     const client = new LoilonoteClient();
     try {
-      const result = await client.getNote(Number(id));
-      console.log(JSON.stringify(result, null, 2));
+      const data = await client.getNote(Number(id));
+      const path = opts.output || `note-${id}.zip`;
+      const fs = await import('node:fs');
+      fs.writeFileSync(path, Buffer.from(data));
+      console.log(`已儲存 ${path}（${(data.byteLength / 1024).toFixed(1)} KB）`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`錯誤：${message}`);

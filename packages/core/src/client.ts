@@ -1,5 +1,5 @@
 import { getToken } from './config.js';
-import type { NotesListResponse, SubmissionsResponse, LoilonoteSession } from './types.js';
+import type { NotesListResponse, SubmissionsResponse, LoilonoteSession, CourseGroup, Course } from './types.js';
 
 export class LoilonoteClient {
   private baseUrl: string;
@@ -10,6 +10,10 @@ export class LoilonoteClient {
     this.baseUrl = baseUrl ?? process.env.LOILONOTE_BASE_URL ?? 'https://n.loilo.tv';
     this.timeout = timeout ?? 30000;
     this.token = getToken();
+  }
+
+  setToken(token: string): void {
+    this.token = token;
   }
 
   private appendToken(url: string): string {
@@ -59,12 +63,12 @@ export class LoilonoteClient {
   }
 
   // --- Courses ---
-  async getCourse(courseId: number): Promise<unknown> {
-    return this.request(`/api/courses/${courseId}`);
+  async listCourses(): Promise<CourseGroup | CourseGroup[]> {
+    return this.request('/api/courses/v3');
   }
 
-  async attendCourse(courseId: number): Promise<unknown> {
-    return this.request(`/api/courses/${courseId}/attend`, { method: 'POST' });
+  async getCourse(courseId: number): Promise<Course> {
+    return this.request(`/api/courses/${courseId}`);
   }
 
   // --- Notes ---
@@ -72,23 +76,16 @@ export class LoilonoteClient {
     return this.request(`/api/notes/v2?course_id=${courseId}&order_by=${orderBy}`);
   }
 
-  async getNote(noteId: number): Promise<unknown> {
-    return this.request(`/api/notes/${noteId}`);
+  async getNote(noteId: number): Promise<ArrayBuffer> {
+    const url = new URL(`/api/notes/${noteId}`, this.baseUrl);
+    const fullUrl = this.appendToken(url.toString());
+    const response = await fetch(fullUrl);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.arrayBuffer();
   }
 
   // --- Submissions ---
-  async listSubmissions(courseId: number): Promise<SubmissionsResponse> {
-    return this.request(`/api/v2?course_id=${courseId}`);
-  }
-
-  // --- Courses list (v3) ---
-  async listCourses(): Promise<unknown> {
-    return this.request('/api/v3');
-  }
-
-  // --- Mobile Push ---
-  async getMobilePush(courseId?: number): Promise<unknown> {
-    const params = courseId ? `?course_id=${courseId}` : '';
-    return this.request(`/api/mobile_push${params}`);
+  async listSubmissions(courseId: number, limit: number = 30): Promise<SubmissionsResponse> {
+    return this.request(`/api/courses/${courseId}/submissions/v2?limit=${limit}`);
   }
 }

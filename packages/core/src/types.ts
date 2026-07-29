@@ -20,10 +20,24 @@ export interface LoilonoteSession {
 }
 
 export interface Course {
-  id: number;
+  course_id: number;
   name: string;
-  created_at?: string;
-  updated_at?: string;
+  subject_id: number;
+  course_root_document_group_id: number;
+  subject_root_document_group_id: number;
+  in_charge: boolean;
+  course_start_at: string;
+  course_finish_at: string;
+  is_private: boolean;
+  is_authorized: boolean;
+}
+
+export interface CourseGroup {
+  user_group_id: number;
+  user_group_name: string;
+  user_group_start_at: string | null;
+  user_group_finish_at: string | null;
+  courses: Course[];
 }
 
 export interface Submission {

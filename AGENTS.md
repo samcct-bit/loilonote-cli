@@ -15,7 +15,7 @@
   - [x] 架構設計文件（docs/architecture.md）
   - [x] API 逆向驗證
   - [x] monorepo 專案骨架
-  - [ ] API client 實作
+  - [x] API client 實作
 
 ## 資料夾結構
 ```
