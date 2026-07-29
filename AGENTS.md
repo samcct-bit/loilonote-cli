@@ -15,14 +15,14 @@
 ## 資料夾結構
 （專案初始化時為空目錄，結構隨開發進度更新）
 
-## 同步層級（本專案初始化至第 2 層級）
+## 同步層級（本專案初始化至第 3 層級）
 
 | 層級 | 平台 | 位置 | 讀取時機 |
 |------|------|------|---------|
 | L1 | 本地 | `AGENTS.md`＋`handoff.md` | 每個 session |
 | L2 | GitHub | samcct-bit/loilonote-cli | 指定時 |
-| L3 | Obsidian | 未啟用（無 Obsidian MCP） | 有需要時 |
-| Obsidian Vault | — | — | — |
+| L3 | Obsidian | Loilonote cli/專案工作流程.md | 有需要時 |
+| Obsidian Vault | 本地 | d:\antigravity\2026antigravity\SecondBrain\SecondBrain | — |
 
 ## 工作約定
 - 任何 Agent、任何電腦：**開工先讀 `handoff.md`，收工必更新 `handoff.md`**
