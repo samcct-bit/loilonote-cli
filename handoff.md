@@ -3,21 +3,21 @@
 > 任何 Agent、任何電腦接手前**必讀**；收工時**必更新**。本檔只放交接必需的精簡資訊，詳細脈絡放 Obsidian（若有 L3）。
 
 ## ⏯️ 目前做到哪
-架構設計文件已完成（docs/architecture.md）。涵蓋 MCP 協定、Loilonote 平台分析、認證機制、模組架構。
+Monorepo 專案骨架已建立（npm workspaces），三個 package（core/cli/mcp）編譯通過。MCP SDK v2 + zod v4 相容性已確認。
 
 ## 🚦 目前狀態
-階段一完成。等待下一階段：API 逆向驗證與 monorepo 骨架。
+專案骨架就緒，TypeScript 編譯零錯誤。下一步需實際 Loilonote API 端點才能讓 client 真正運作。
 
 ## ➡️ 下一步
-1. 在瀏覽器中攔截 loilonote.app 的 HTTP 請求，逆向 API 端點
-2. 確認 session token 格式與認證流程
-3. 建立 monorepo（npm workspaces）專案骨架
+1. 用 Chrome DevTools 攔截 loilonote.app 的 HTTP 請求，取得真實 API endpoint 與 token 格式
+2. 將逆向結果寫入 core 套件的 client.ts（替換 TODO 標記）
+3. 實作 auth.ts 的 OAuth / Cookie 登入流程
 
 ## ⚠️ 注意事項
 - RDQ 規格卡：`rdq/RDQ-spec-loilonote-arch-20260729.md`
 - 架構設計文件：`docs/architecture.md`
-- Loilonote 無公開 API 文件，需透過 Chrome DevTools 逆向
-- Web App 目前版本號 7.8.0
+- MCP SDK 使用 v2.0.0 + zod v4.4.3（非 v3）
+- Loilonote JS bundle 被 CDN 防盜連保護（403），需瀏覽器手動攔截
 
 ## 🕐 最後更新
 - 時間：2026-07-29 23:09

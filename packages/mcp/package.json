@@ -1,0 +1,23 @@
+{
+  "name": "@loilonote/mcp",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Loilonote MCP Server — exposes Loilonote as Model Context Protocol tools",
+  "main": "./dist/index.js",
+  "bin": {
+    "loilonote-mcp": "./dist/entry.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@loilonote/core": "0.1.0",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}

@@ -14,8 +14,8 @@
   - [x] RDQ 需求訪談
   - [x] 架構設計文件（docs/architecture.md）
   - [ ] API 逆向驗證
-  - [ ] monorepo 專案骨架
-  - [ ] MVP 實作
+  - [x] monorepo 專案骨架
+  - [ ] API client 實作
 
 ## 資料夾結構
 ```
@@ -23,12 +23,31 @@ loilonote/
 ├── AGENTS.md                 # 專案藍圖
 ├── handoff.md                # 交接檔
 ├── .gitignore
+├── package.json              # monorepo root（npm workspaces）
+├── tsconfig.json
+├── .env.example
 ├── rdq/                      # RDQ 需求規格卡
 │   └── RDQ-spec-loilonote-arch-20260729.md
-└── docs/                     # 設計文件
-    └── architecture.md       # 架構設計文件（已完成）
+├── docs/                     # 設計文件
+│   └── architecture.md       # 架構設計文件
+└── packages/
+    ├── core/                 # @loilonote/core — API client & auth
+    │   └── src/
+    │       ├── index.ts
+    │       ├── types.ts
+    │       ├── config.ts
+    │       ├── auth.ts
+    │       └── client.ts
+    ├── cli/                  # @loilonote/cli — 命令列介面
+    │   └── src/
+    │       ├── index.ts
+    │       └── cli.ts
+    └── mcp/                  # @loilonote/mcp — MCP Server
+        └── src/
+            ├── index.ts
+            ├── entry.ts
+            └── server.ts
 ```
-（結構隨開發進度更新）
 
 ## 同步層級（本專案初始化至第 3 層級）
 

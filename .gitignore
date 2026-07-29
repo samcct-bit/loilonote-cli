@@ -4,3 +4,15 @@ desktop.ini
 .env
 *.key
 credentials.*
+
+# Node.js
+node_modules/
+dist/
+*.tsbuildinfo
+
+# npm
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
