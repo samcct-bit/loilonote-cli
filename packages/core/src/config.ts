@@ -6,12 +6,11 @@ import type { LoilonoteConfig } from './types.js';
 const DEFAULT_CONFIG: LoilonoteConfig = {
   version: 1,
   auth: {
-    method: 'cookie',
     token: null,
     tokenFile: null,
   },
   server: {
-    baseUrl: 'https://loilonote.app',
+    baseUrl: 'https://n.loilo.tv',
     timeout: 30000,
   },
   cli: {
@@ -36,7 +35,13 @@ export function loadConfig(): LoilonoteConfig {
   try {
     const raw = readFileSync(path, 'utf-8');
     const user = JSON.parse(raw);
-    return { ...DEFAULT_CONFIG, ...user, auth: { ...DEFAULT_CONFIG.auth, ...user.auth }, server: { ...DEFAULT_CONFIG.server, ...user.server }, cli: { ...DEFAULT_CONFIG.cli, ...user.cli } };
+    return {
+      ...DEFAULT_CONFIG,
+      ...user,
+      auth: { ...DEFAULT_CONFIG.auth, ...user.auth },
+      server: { ...DEFAULT_CONFIG.server, ...user.server },
+      cli: { ...DEFAULT_CONFIG.cli, ...user.cli },
+    };
   } catch {
     return { ...DEFAULT_CONFIG };
   }

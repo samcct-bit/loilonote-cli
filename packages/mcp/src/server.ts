@@ -10,94 +10,74 @@ const server = new McpServer({
 
 const client = new LoilonoteClient();
 
-// --- Tool: 列出筆記本 ---
+// --- Tool: 列出課程 ---
 server.registerTool(
-  'loilonote_notebook_list',
+  'loilonote_course_list',
   {
-    description: '列出 Loilonote 中的所有筆記本',
+    description: '列出所有課程',
   },
   async () => {
-    const result = await client.listNotebooks();
+    const result = await client.listCourses();
     return {
       content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
     };
   }
 );
 
-// --- Tool: 取得筆記本 ---
+// --- Tool: 取得課程 ---
 server.registerTool(
-  'loilonote_notebook_get',
+  'loilonote_course_get',
   {
-    description: '取得指定筆記本的詳細內容',
-    inputSchema: { notebookId: z.string().describe('筆記本 ID') },
+    description: '取得指定課程的詳細內容',
+    inputSchema: { courseId: z.number().describe('課程 ID') },
   },
-  async ({ notebookId }) => {
-    const notebook = await client.getNotebook(notebookId);
+  async ({ courseId }) => {
+    const result = await client.getCourse(courseId);
     return {
-      content: [{ type: 'text' as const, text: JSON.stringify(notebook, null, 2) }],
+      content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
     };
   }
 );
 
-// --- Tool: 建立筆記本 ---
+// --- Tool: 列出筆記 ---
 server.registerTool(
-  'loilonote_notebook_create',
+  'loilonote_note_list',
   {
-    description: '在 Loilonote 中建立新的筆記本',
-    inputSchema: { title: z.string().describe('筆記本標題') },
+    description: '列出指定課程中的所有筆記',
+    inputSchema: { courseId: z.number().describe('課程 ID') },
   },
-  async ({ title }) => {
-    const notebook = await client.createNotebook(title);
+  async ({ courseId }) => {
+    const result = await client.listNotes(courseId);
     return {
-      content: [{ type: 'text' as const, text: JSON.stringify(notebook, null, 2) }],
+      content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
     };
   }
 );
 
-// --- Tool: 列出卡片 ---
+// --- Tool: 取得筆記 ---
 server.registerTool(
-  'loilonote_card_list',
+  'loilonote_note_get',
   {
-    description: '列出指定筆記本中的所有卡片',
-    inputSchema: { notebookId: z.string().describe('筆記本 ID') },
+    description: '取得指定筆記的詳細內容',
+    inputSchema: { noteId: z.number().describe('筆記 ID') },
   },
-  async ({ notebookId }) => {
-    const cards = await client.listCards(notebookId);
+  async ({ noteId }) => {
+    const result = await client.getNote(noteId);
     return {
-      content: [{ type: 'text' as const, text: JSON.stringify(cards, null, 2) }],
+      content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
     };
   }
 );
 
-// --- Tool: 建立卡片 ---
+// --- Tool: 列出繳交作業 ---
 server.registerTool(
-  'loilonote_card_create',
+  'loilonote_submission_list',
   {
-    description: '在指定筆記本中建立新卡片',
-    inputSchema: {
-      notebookId: z.string().describe('筆記本 ID'),
-      content: z.string().describe('卡片內容（文字或 JSON）'),
-    },
+    description: '列出指定課程的繳交作業',
+    inputSchema: { courseId: z.number().describe('課程 ID') },
   },
-  async ({ notebookId, content }) => {
-    let parsed: unknown = content;
-    try { parsed = JSON.parse(content); } catch { /* raw text */ }
-    const card = await client.createCard(notebookId, parsed);
-    return {
-      content: [{ type: 'text' as const, text: JSON.stringify(card, null, 2) }],
-    };
-  }
-);
-
-// --- Tool: 搜尋 ---
-server.registerTool(
-  'loilonote_search',
-  {
-    description: '在 Loilonote 中搜尋筆記與卡片',
-    inputSchema: { query: z.string().describe('搜尋關鍵字') },
-  },
-  async ({ query }) => {
-    const result = await client.search(query);
+  async ({ courseId }) => {
+    const result = await client.listSubmissions(courseId);
     return {
       content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
     };
