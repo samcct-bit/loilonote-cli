@@ -1,6 +1,6 @@
 {
   "name": "@samcct-bit/loilonote-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Loilonote API client — auth, HTTP, type definitions",
   "main": "./dist/index.js",
