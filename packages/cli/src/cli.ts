@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { LoilonoteClient, AuthManager, loadConfig } from '@loilonote/core';
+import { LoilonoteClient, AuthManager, loadConfig, loginWithBrowser } from '@loilonote/core';
 
 const program = new Command();
 
@@ -12,9 +12,10 @@ program
 // --- Auth ---
 program
   .command('login')
-  .description('登入 Loilonote（互動式）')
-  .option('--token <token>', '直接指定 auth_token（跳過互動式流程）')
-  .action(async (opts: { token?: string }) => {
+  .description('登入 Loilonote（自動 / 互動式）')
+  .option('--token <token>', '直接指定 auth_token')
+  .option('--manual', '跳過自動登入，使用手動流程')
+  .action(async (opts: { token?: string; manual?: boolean }) => {
     if (opts.token) {
       const auth = new AuthManager();
       auth.setToken(opts.token);
@@ -22,12 +23,32 @@ program
       if (valid) {
         console.log('登入成功（token 有效）');
       } else {
-        console.error('Token 無效，請重新取得');
+        console.error('Token 無效');
         process.exit(1);
       }
       return;
     }
 
+    // Try automatic CDP-based login
+    if (!opts.manual) {
+      console.log('嘗試自動登入（Chrome DevTools Protocol）...');
+      try {
+        const token = await loginWithBrowser();
+        const auth = new AuthManager();
+        auth.setToken(token);
+        const valid = await auth.validate();
+        if (valid) {
+          console.log('自動登入成功！Token 已儲存');
+          return;
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`自動登入失敗：${msg}`);
+        console.log('切換到手動流程...\n');
+      }
+    }
+
+    // Fallback: manual flow
     console.log('正在打開瀏覽器...');
     const { exec } = await import('node:child_process');
     const openCmd = process.platform === 'win32'
