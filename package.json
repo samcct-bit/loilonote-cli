@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Loilonote MCP Server & CLI — 讓 AI Agent 操作 Loilonote",
   "bin": {
-    "loilonote-mcp": "./packages/mcp/dist/server.js"
+    "loilonote": "./packages/cli/dist/cli.js",
+    "loilonote-mcp": "./packages/mcp/dist/entry.js"
   },
   "workspaces": [
     "packages/core",

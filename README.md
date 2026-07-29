@@ -125,11 +125,11 @@ AI Agent 會自動呼叫 MCP tools 取得資料。
 ## CLI 命令（非 AI Agent，終端機手動使用）
 
 ```bash
-loilonote-mcp login              # 登入（自動打開瀏覽器）
-loilonote-mcp course-list        # 列出所有課程
-loilonote-mcp note-list <id>     # 列出課程筆記
-loilonote-mcp note-inspect <id>  # 解析筆記結構
-loilonote-mcp note-text <id>     # 提取筆記文字
+loilonote login              # 登入（自動打開瀏覽器）
+loilonote course list        # 列出所有課程
+loilonote note list <id>     # 列出課程筆記
+loilonote note inspect <id>  # 解析筆記結構
+loilonote note text <id>     # 提取筆記文字
 ```
 
 ## 專案結構

@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Loilonote MCP Server — 讓 AI Agent 直接操作 Loilonote（課程/筆記/繳交作業）",
   "bin": {
-    "loilonote-mcp": "./dist/server.js"
+    "loilonote-mcp": "./dist/entry.js"
   },
   "main": "./dist/index.js",
   "files": [
