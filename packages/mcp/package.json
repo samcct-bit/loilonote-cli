@@ -2,22 +2,39 @@
   "name": "@loilonote/mcp",
   "version": "0.1.0",
   "type": "module",
-  "description": "Loilonote MCP Server — exposes Loilonote as Model Context Protocol tools",
-  "main": "./dist/index.js",
+  "description": "Loilonote MCP Server — 讓 AI Agent 直接操作 Loilonote（課程/筆記/繳交作業）",
   "bin": {
-    "loilonote-mcp": "./dist/entry.js"
+    "loilonote-mcp": "./dist/server.js"
   },
-  "files": ["dist"],
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "prepack": "npm run build",
+    "start": "node dist/server.js"
   },
   "dependencies": {
-    "@loilonote/core": "0.1.0",
     "@modelcontextprotocol/server": "^2.0.0",
-    "zod": "^4.0.0"
+    "zod": "^4.0.0",
+    "adm-zip": "^0.5.0"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.0",
     "typescript": "^5.3.0"
+  },
+  "keywords": [
+    "loilonote",
+    "mcp",
+    "model-context-protocol",
+    "education",
+    "ai-agent"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/samcct-bit/loilonote-cli"
   }
 }

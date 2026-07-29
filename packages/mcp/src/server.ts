@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/server';
 import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
 import { z } from 'zod';
-import { LoilonoteClient } from '@loilonote/core';
+import { LoilonoteClient } from './client.js';
 
 const server = new McpServer({
   name: 'loilonote',

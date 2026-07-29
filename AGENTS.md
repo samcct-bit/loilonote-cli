@@ -19,6 +19,7 @@
   - [x] MCP server（8 個 tools）
   - [x] 筆記 ZIP 解析（inspect/text 命令）
   - [x] CDP 自動登入
+  - [x] MCP 自包含打包（可獨立安裝）
 
 ## 資料夾結構
 ```

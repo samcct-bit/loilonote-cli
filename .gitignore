@@ -7,7 +7,7 @@ credentials.*
 
 # Node.js
 node_modules/
-dist/
+/dist/
 *.tsbuildinfo
 
 # npm

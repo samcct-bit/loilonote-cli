@@ -3,19 +3,22 @@
 > 任何 Agent、任何電腦接手前**必讀**；收工時**必更新**。本檔只放交接必需的精簡資訊，詳細脈絡放 Obsidian（若有 L3）。
 
 ## ⏯️ 目前做到哪
-MCP server 已配置到 OpenCode（C:\Users\samcc\.config\opencode\opencode.json）。CDP 自動登入完成。
+MCP server 已重構為自包含套件（無 workspace 相依），可直接從 GitHub 安裝。README 撰寫完成。
 
-### 已配置
-- OpenCode MCP config：loilonote server 已啟用
-- Token：需先執行 `loilonote login` 確保有效
+### 安裝方式
+```bash
+npm install -g github:samcct-bit/loilonote-cli
+loilonote-mcp login
+```
+→ 加到任意 AI Agent 的 MCP 設定即可使用
 
 ## 🚦 目前狀態
-10 CLI 命令 + 8 MCP tools + CDP 自動登入 + OpenCode MCP 配置。待重啟 OpenCode 實測。
+可發布。repo 目前為私有，需設為公開才能讓外界安裝。
 
 ## ➡️ 下一步
-1. 執行 `loilonote login` 刷新 token
-2. 重啟 OpenCode 載入 MCP server
-3. 在對話中測試 loilonote tools
+1. 將 GitHub repo 設為公開
+2. （可選）發布到 npm：`npm publish --access public`
+3. 在 OpenCode 重啟後測試 MCP server
 
 ## 🕐 最後更新
 - 時間：2026-07-29 23:09

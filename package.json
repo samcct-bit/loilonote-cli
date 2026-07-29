@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Loilonote MCP Server & CLI tools",
+  "description": "Loilonote MCP Server & CLI — 讓 AI Agent 操作 Loilonote",
+  "bin": {
+    "loilonote-mcp": "./packages/mcp/dist/server.js"
+  },
   "workspaces": [
     "packages/core",
     "packages/cli",
@@ -16,12 +19,15 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "eslint": "^8.0.0",
     "rimraf": "^5.0.0",
     "typescript": "^5.3.0"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/samcct-bit/loilonote-cli"
+  }
 }
