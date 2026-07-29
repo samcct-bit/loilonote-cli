@@ -1,5 +1,5 @@
 {
-  "name": "@loilonote/mcp",
+  "name": "@samcct-bit/loilonote-mcp",
   "version": "0.1.0",
   "type": "module",
   "description": "Loilonote MCP Server — 讓 AI Agent 直接操作 Loilonote（課程/筆記/繳交作業）",

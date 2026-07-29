@@ -1,5 +1,5 @@
 {
-  "name": "@loilonote/cli",
+  "name": "@samcct-bit/loilonote-cli",
   "version": "0.1.0",
   "type": "module",
   "description": "Loilonote command-line interface",
@@ -13,7 +13,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@loilonote/core": "0.1.0",
+    "@samcct-bit/loilonote-core": "0.1.0",
     "commander": "^12.0.0"
   },
   "devDependencies": {

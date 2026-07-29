@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { LoilonoteClient, AuthManager, loadConfig, loginWithBrowser } from '@loilonote/core';
+import { LoilonoteClient, AuthManager, loadConfig, loginWithBrowser } from '@samcct-bit/loilonote-core';
 const program = new Command();
 program
     .name('loilonote')

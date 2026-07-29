@@ -1,5 +1,5 @@
 {
-  "name": "@loilonote/core",
+  "name": "@samcct-bit/loilonote-core",
   "version": "0.1.0",
   "type": "module",
   "description": "Loilonote API client — auth, HTTP, type definitions",
