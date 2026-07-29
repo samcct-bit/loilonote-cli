@@ -12,7 +12,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc",
@@ -24,5 +25,15 @@
   },
   "devDependencies": {
     "typescript": "^5.3.0"
+  },
+  "keywords": [
+    "loilonote",
+    "api-client",
+    "education"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/samcct-bit/loilonote-cli"
   }
 }

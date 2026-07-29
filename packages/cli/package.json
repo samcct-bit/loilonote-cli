@@ -2,12 +2,15 @@
   "name": "@samcct-bit/loilonote-cli",
   "version": "0.1.0",
   "type": "module",
-  "description": "Loilonote command-line interface",
+  "description": "Loilonote School CLI — 命令列查詢課程/筆記/繳交作業",
   "main": "./dist/index.js",
   "bin": {
     "loilonote": "./dist/cli.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch"
@@ -18,5 +21,15 @@
   },
   "devDependencies": {
     "typescript": "^5.3.0"
+  },
+  "keywords": [
+    "loilonote",
+    "cli",
+    "education"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/samcct-bit/loilonote-cli"
   }
 }
