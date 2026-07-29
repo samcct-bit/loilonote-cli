@@ -1,0 +1,3 @@
+# 強制 dist 輸出用 LF 行尾（npm bin 要求）
+packages/*/dist/* eol=lf
+packages/*/dist/**/* eol=lf
