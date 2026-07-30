@@ -1,4 +1,4 @@
-import type { NotesListResponse, SubmissionsResponse, LoilonoteSession, CourseGroup, CourseDetail, ParsedNote } from './types.js';
+import type { NotesListResponse, SubmissionsResponse, LoilonoteSession, CourseGroup, CourseDetail, ParsedNote, OgpResponse, CreateAssetRequest, AssetResponse } from './types.js';
 export declare class LoilonoteClient {
     private baseUrl;
     private timeout;
@@ -28,6 +28,11 @@ export declare class LoilonoteClient {
      * 覆寫筆記內容 (利用 FormData 打包上傳)
      */
     updateNote(courseId: number, noteId: number, version: number, zipBuffer: Buffer): Promise<void>;
+    uploadGenericFile(buffer: Buffer, extension: string): Promise<{
+        id: number;
+    }>;
+    createAsset(req: CreateAssetRequest): Promise<AssetResponse>;
+    fetchOGP(targetUrl: string): Promise<OgpResponse>;
     /**
      * 列出筆記中的所有媒體資源（圖片/PDF/背景圖的 remote_id）
      */
@@ -38,5 +43,6 @@ export declare class LoilonoteClient {
     }[];
     extractText(parsed: ParsedNote): string;
     listSubmissions(courseId: number, limit?: number): Promise<SubmissionsResponse>;
+    submitNote(courseId: number, submissionId: number, zipBuffer: Buffer): Promise<void>;
 }
 //# sourceMappingURL=client.d.ts.map

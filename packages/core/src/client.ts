@@ -5,6 +5,7 @@ import * as os from 'node:os';
 import type {
   NotesListResponse, SubmissionsResponse, LoilonoteSession,
   CourseGroup, CourseDetail, ParsedNote, NoteBody, NoteHeader,
+  OgpResponse, CreateAssetRequest, AssetResponse
 } from './types.js';
 
 export class LoilonoteClient {
@@ -168,6 +169,67 @@ export class LoilonoteClient {
     }
   }
 
+  // --- Assets & Media ---
+  async uploadGenericFile(buffer: Buffer, extension: string): Promise<{ id: number }> {
+    const url = new URL(`/api/generic_files?extension=${encodeURIComponent(extension)}`, this.baseUrl);
+    const fullUrl = this.appendToken(url.toString());
+
+    const res = await fetch(fullUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': extension === '.png' ? 'image/png' : 'application/octet-stream',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
+      },
+      body: buffer
+    });
+    if (!res.ok) {
+      const error = await res.text().catch(() => 'Unknown error');
+      throw new Error(`HTTP ${res.status}: ${error}`);
+    }
+    return res.json() as Promise<{ id: number }>;
+  }
+
+  async createAsset(req: CreateAssetRequest): Promise<AssetResponse> {
+    // The API expects a JSON body with generic_file_id, page_count, metadata, thumbnails, auth_token
+    const payload = {
+      ...req,
+      auth_token: this.token ?? getToken() ?? ''
+    };
+    const res = await fetch(this.baseUrl + '/api/assets', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const error = await res.text().catch(() => 'Unknown error');
+      throw new Error(`HTTP ${res.status}: ${error}`);
+    }
+    return res.json() as Promise<AssetResponse>;
+  }
+
+  async fetchOGP(targetUrl: string): Promise<OgpResponse> {
+    // Note: The actual OGP API might be on loilonote.app rather than n.loilo.tv
+    const res = await fetch('https://loilonote.app/api/ogp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
+      },
+      body: JSON.stringify({ url: targetUrl })
+    });
+    if (!res.ok) {
+      return { url: targetUrl }; // Fallback
+    }
+    try {
+      return await res.json() as OgpResponse;
+    } catch {
+      return { url: targetUrl };
+    }
+  }
+
   /**
    * 列出筆記中的所有媒體資源（圖片/PDF/背景圖的 remote_id）
    */
@@ -222,5 +284,28 @@ export class LoilonoteClient {
   // --- Submissions ---
   async listSubmissions(courseId: number, limit: number = 30): Promise<SubmissionsResponse> {
     return this.request(`/api/courses/${courseId}/submissions/v2?limit=${limit}`);
+  }
+
+  async submitNote(courseId: number, submissionId: number, zipBuffer: Buffer): Promise<void> {
+    const fetchUrl = `https://n.loilo.tv/api/courses/${courseId}/submissions/${submissionId}/v2`;
+    
+    const dummyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+    const { id: dummyId } = await this.uploadGenericFile(dummyPng, '.png');
+
+    const formData = new FormData();
+    const blob = new Blob([zipBuffer], { type: 'application/zip' });
+    formData.append('data', blob, 'note.zip');
+    formData.append('thumbnails', JSON.stringify([{ index: 0, small: dummyId, medium: dummyId }]));
+    formData.append('auth_token', this.token ?? getToken() ?? '');
+
+    const res = await fetch(fetchUrl, {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!res.ok) {
+        const error = await res.text().catch(() => 'Unknown error');
+        throw new Error(`HTTP ${res.status}: ${error}`);
+    }
   }
 }

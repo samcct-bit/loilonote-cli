@@ -125,6 +125,23 @@ export interface NotesListResponse {
 export interface SubmissionsResponse {
     submissions: Submission[];
 }
+export interface OgpResponse {
+    url?: string;
+    title?: string;
+    description?: string;
+    image?: string;
+}
+export interface CreateAssetRequest {
+    generic_file_id: number;
+    page_count: number;
+    metadata?: string;
+    thumbnails?: string;
+}
+export interface AssetResponse {
+    id: string;
+    description?: string;
+    extension?: string;
+}
 export interface LoilonoteConfig {
     version: number;
     auth: {

@@ -132,6 +132,27 @@ export interface SubmissionsResponse {
   submissions: Submission[];
 }
 
+export interface OgpResponse {
+  url?: string;
+  title?: string;
+  description?: string;
+  image?: string;
+}
+
+export interface CreateAssetRequest {
+  generic_file_id: number;
+  page_count: number;
+  metadata?: string; // e.g. '[{"width":1024,"height":768}]'
+  thumbnails?: string; // e.g. '[{"index":0,"small":...}]'
+}
+
+export interface AssetResponse {
+  id: string; // This is the remote_id
+  description?: string;
+  extension?: string;
+}
+
+
 export interface LoilonoteConfig {
   version: number;
   auth: {

@@ -44,12 +44,13 @@ async function getCdpEndpoint(port) {
     for (let i = 0; i < 30; i++) {
         await new Promise(r => setTimeout(r, 500));
         try {
-            const res = await fetch(`http://127.0.0.1:${port}/json/version`);
+            const res = await fetch(`http://127.0.0.1:${port}/json/list`);
             if (!res.ok)
                 continue;
             const data = await res.json();
-            if (data.webSocketDebuggerUrl)
-                return data.webSocketDebuggerUrl;
+            const page = data.find(t => t.type === 'page' && t.webSocketDebuggerUrl);
+            if (page?.webSocketDebuggerUrl)
+                return page.webSocketDebuggerUrl;
         }
         catch { /* retry */ }
     }
@@ -94,6 +95,16 @@ export async function loginWithBrowser() {
                             resolve(m[1]);
                             return;
                         }
+                        // Check headers for Bearer token
+                        const authHeader = req?.headers?.['Authorization'] || req?.headers?.['authorization'];
+                        if (authHeader && authHeader.startsWith('Bearer ')) {
+                            const token = authHeader.substring(7);
+                            if (token.length > 10) {
+                                stop();
+                                resolve(token);
+                                return;
+                            }
+                        }
                     }
                     // 2. Page loaded → inject interceptor
                     if (msg.method === 'Page.loadEventFired' || msg.method === 'Runtime.executionContextCreated') {
@@ -120,7 +131,26 @@ export async function loginWithBrowser() {
                         if (!pollTimer) {
                             pollTimer = setInterval(() => {
                                 send('Runtime.evaluate', {
-                                    expression: 'window.__loilotoken||""',
+                                    expression: `(() => {
+                    if (window.__loilotoken) return window.__loilotoken;
+                    try {
+                      const m = document.cookie.match(/(?:auth_token|token)=([A-Za-z0-9_-]{10,})/);
+                      if (m) return m[1];
+                      for (let i = 0; i < localStorage.length; i++) {
+                        const k = localStorage.key(i);
+                        const v = localStorage.getItem(k);
+                        if (v && v.length > 15 && v.length < 100 && (k.includes('token') || k === 'auth')) {
+                          try {
+                            const parsed = JSON.parse(v);
+                            if (parsed.token || parsed.auth_token || parsed.accessToken) return parsed.token || parsed.auth_token || parsed.accessToken;
+                          } catch(e) {
+                            return v;
+                          }
+                        }
+                      }
+                    } catch(e) {}
+                    return "";
+                  })()`,
                                     returnByValue: true,
                                 });
                             }, 1500);

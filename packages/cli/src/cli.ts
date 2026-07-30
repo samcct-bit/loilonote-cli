@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { LoilonoteClient, AuthManager, loadConfig, loginWithBrowser } from '@samcct-bit/loilonote-core';
+import { LoilonoteClient, AuthManager, loadConfig, loginWithBrowser, NoteBuilder } from '@samcct-bit/loilonote-core';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 const program = new Command();
 
@@ -295,10 +297,59 @@ note
     }
   });
 
+note
+  .command('append-web <courseId> <id> <url>')
+  .description('附加網頁卡片至筆記')
+  .action(async (courseId: string, id: string, url: string) => {
+    const client = new LoilonoteClient();
+    try {
+      const parsed = await client.getParsedNote(Number(id));
+      const ogp = await client.fetchOGP(url);
+      NoteBuilder.appendWebCard(parsed, url, ogp.title);
+      parsed.version += 1;
+      const buf = await client.packNote(parsed);
+      await client.updateNote(Number(courseId), Number(id), parsed.version, buf);
+      console.log('網頁卡片已成功附加！');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`錯誤：${message}`);
+      process.exit(1);
+    }
+  });
+
+note
+  .command('append-image <courseId> <id> <filepath>')
+  .description('附加圖片卡片至筆記')
+  .action(async (courseId: string, id: string, filepath: string) => {
+    const client = new LoilonoteClient();
+    try {
+      const buffer = fs.readFileSync(filepath);
+      const ext = path.extname(filepath).toLowerCase();
+      const uploadRes = await client.uploadGenericFile(buffer, ext);
+      const assetRes = await client.createAsset({
+        generic_file_id: uploadRes.id,
+        page_count: 1,
+        metadata: '[{"width":1024,"height":768}]', // Default for now
+        thumbnails: '[]'
+      });
+      const parsed = await client.getParsedNote(Number(id));
+      NoteBuilder.appendPictureCard(parsed, assetRes.id, path.basename(filepath));
+      parsed.version += 1;
+      const buf = await client.packNote(parsed);
+      await client.updateNote(Number(courseId), Number(id), parsed.version, buf);
+      console.log('圖片卡片已成功附加！');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`錯誤：${message}`);
+      process.exit(1);
+    }
+  });
+
 // --- Submissions ---
-program
-  .command('submissions <courseId>')
-  .alias('sub')
+const sub = program.command('sub').alias('submissions').description('作業繳交相關操作');
+
+sub
+  .command('list <courseId>')
   .description('列出課程的繳交作業')
   .action(async (courseId: string) => {
     const client = new LoilonoteClient();
@@ -308,6 +359,24 @@ program
         const status = s.submitted ? '已繳' : `開放至 ${s.expiry}`;
         console.log(`[#${s.submission_number}] ${s.message}  ${status}`);
       }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`錯誤：${message}`);
+      process.exit(1);
+    }
+  });
+
+sub
+  .command('submit <courseId> <submissionId> <noteId>')
+  .description('繳交筆記至作業箱')
+  .action(async (courseId: string, submissionId: string, noteId: string) => {
+    const client = new LoilonoteClient();
+    try {
+      console.log('正在打包並繳交...');
+      const parsed = await client.getParsedNote(Number(noteId));
+      const buf = await client.packNote(parsed);
+      await client.submitNote(Number(courseId), Number(submissionId), buf);
+      console.log('作業繳交成功！');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`錯誤：${message}`);
