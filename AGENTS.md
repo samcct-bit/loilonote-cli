@@ -31,7 +31,8 @@ loilonote/
 ├── tsconfig.json
 ├── .env.example
 ├── rdq/                      # RDQ 需求規格卡
-│   └── RDQ-spec-loilonote-arch-20260729.md
+│   ├── RDQ-spec-loilonote-arch-20260729.md
+│   └── RDQ-spec-modify-note-20260730.md
 ├── docs/                     # 設計文件
 │   └── architecture.md       # 架構設計文件
 └── packages/
