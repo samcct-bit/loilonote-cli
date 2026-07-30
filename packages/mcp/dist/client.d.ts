@@ -17,6 +17,18 @@ export declare class LoilonoteClient {
      */
     getParsedNote(noteId: number): Promise<ParsedNote>;
     /**
+     * 備份筆記原始 ZIP 至本機
+     */
+    backupNote(noteId: number): Promise<string>;
+    /**
+     * 將修改後的 ParsedNote 重新打包為 ZIP Buffer
+     */
+    packNote(parsed: ParsedNote): Promise<Buffer>;
+    /**
+     * 覆寫筆記內容 (利用 FormData 打包上傳)
+     */
+    updateNote(courseId: number, noteId: number, version: number, zipBuffer: Buffer): Promise<void>;
+    /**
      * 列出筆記中的所有媒體資源（圖片/PDF/背景圖的 remote_id）
      */
     extractAssets(parsed: ParsedNote): {

@@ -105,6 +105,41 @@ server.registerTool('loilonote_note_text', {
     const text = getClient().extractText(parsed);
     return { content: [{ type: 'text', text: text || '(無文字內容)' }] };
 });
+// --- Tool: 修改筆記內容 ---
+server.registerTool('loilonote_note_update', {
+    description: '修改/覆寫筆記內容。將文字寫回筆記的第一張卡片中，執行前會自動備份原始筆記至 ~/.loilonote/backups/',
+    inputSchema: {
+        courseId: z.number().describe('課程 ID'),
+        noteId: z.number().describe('筆記 ID'),
+        newText: z.string().describe('要寫入的新文字內容')
+    },
+}, async ({ courseId, noteId, newText }) => {
+    const client = getClient();
+    // 1. 強制備份
+    const backupPath = await client.backupNote(noteId);
+    // 2. 取得解析結構
+    const parsed = await client.getParsedNote(noteId);
+    if (parsed.body.data.frames.length === 0) {
+        throw new Error('筆記中沒有任何卡片，無法寫入內容。');
+    }
+    // 3. 修改第一張卡片的文字
+    const firstFrame = parsed.body.data.frames[0];
+    const gadgets = firstFrame.gadgets;
+    let textGadgetKey = Object.keys(gadgets).find(k => gadgets[k] && typeof gadgets[k].text === 'string');
+    if (!textGadgetKey) {
+        // 找不到現有的文字 Gadget，建立一個新的
+        textGadgetKey = 'ai_text_gadget_' + Date.now();
+        gadgets[textGadgetKey] = { text: '' };
+    }
+    gadgets[textGadgetKey].text = newText;
+    // 4. 增加版本號並重新打包
+    parsed.version += 1;
+    const zipBuffer = await client.packNote(parsed);
+    // 5. 批次上傳覆寫
+    await client.updateNote(courseId, noteId, parsed.version, zipBuffer);
+    const text = `成功更新筆記 ${noteId}！\n(已自動備份原始檔案至: ${backupPath})`;
+    return { content: [{ type: 'text', text }] };
+});
 // --- Entry point ---
 async function main() {
     const transport = new StdioServerTransport();

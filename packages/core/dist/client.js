@@ -1,4 +1,7 @@
 import { getToken } from './config.js';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+import * as os from 'node:os';
 export class LoilonoteClient {
     baseUrl;
     timeout;
@@ -91,6 +94,52 @@ export class LoilonoteClient {
             frameCount: body.data.frames.length,
             frameTypes: uniqueTypes,
         };
+    }
+    /**
+     * 備份筆記原始 ZIP 至本機
+     */
+    async backupNote(noteId) {
+        const data = await this.getNote(noteId);
+        const backupDir = path.join(os.homedir(), '.loilonote', 'backups');
+        await fs.mkdir(backupDir, { recursive: true });
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const backupPath = path.join(backupDir, `note_${noteId}_${timestamp}.zip`);
+        await fs.writeFile(backupPath, Buffer.from(data));
+        return backupPath;
+    }
+    /**
+     * 將修改後的 ParsedNote 重新打包為 ZIP Buffer
+     */
+    async packNote(parsed) {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const AdmZip = (await import('adm-zip')).default;
+        const zip = new AdmZip();
+        zip.addFile('version', Buffer.from(parsed.version.toString() + '\n'));
+        zip.addFile('header', Buffer.from(JSON.stringify(parsed.header)));
+        zip.addFile('body', Buffer.from(JSON.stringify(parsed.body)));
+        return zip.toBuffer();
+    }
+    /**
+     * 覆寫筆記內容 (利用 FormData 打包上傳)
+     */
+    async updateNote(courseId, noteId, version, zipBuffer) {
+        const fetchUrl = `https://n.loilo.tv/api/notes/upload`;
+        const formData = new FormData();
+        formData.append('id', noteId.toString());
+        formData.append('course_id', courseId.toString());
+        formData.append('version', version.toString());
+        const blob = new Blob([zipBuffer], { type: 'application/zip' });
+        formData.append('data', blob, 'note.zip');
+        formData.append('assets', '[]');
+        formData.append('auth_token', this.token ?? getToken() ?? '');
+        const res = await fetch(fetchUrl, {
+            method: 'POST',
+            body: formData
+        });
+        if (!res.ok) {
+            const error = await res.text().catch(() => 'Unknown error');
+            throw new Error(`HTTP ${res.status}: ${error}`);
+        }
     }
     /**
      * 列出筆記中的所有媒體資源（圖片/PDF/背景圖的 remote_id）

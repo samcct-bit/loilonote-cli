@@ -1,6 +1,6 @@
 {
   "name": "loilonote-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "Loilonote MCP Server & CLI — 讓 AI Agent 操作 Loilonote",
