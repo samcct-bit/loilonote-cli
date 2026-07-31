@@ -1,6 +1,6 @@
 {
   "name": "@samcct-bit/loilonote-cli",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "type": "module",
   "description": "Loilonote School CLI — 命令列查詢課程/筆記/繳交作業",
   "main": "./dist/index.js",

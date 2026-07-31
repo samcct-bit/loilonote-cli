@@ -3,13 +3,24 @@ export declare class LoilonoteClient {
     private baseUrl;
     private timeout;
     private token;
+    private refreshPromise?;
+    onTokenRefreshStart?: () => void;
     constructor(baseUrl?: string, timeout?: number);
     setToken(token: string): void;
     private appendToken;
+    private refreshAuthToken;
     private request;
     authenticate(appId: string, oauthToken: string): Promise<LoilonoteSession>;
     listCourses(): Promise<CourseGroup | CourseGroup[]>;
     getCourse(courseId: number): Promise<CourseDetail>;
+    /**
+     * 取得指定課程的學生名單（去識別化）
+     */
+    listUsers(courseId: number): Promise<any>;
+    /**
+     * 將單一使用者去識別化 (轉為 stu01 格式)
+     */
+    private anonymizeUser;
     listNotes(courseId: number, orderBy?: string): Promise<NotesListResponse>;
     getNote(noteId: number): Promise<ArrayBuffer>;
     /**

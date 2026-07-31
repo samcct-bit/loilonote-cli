@@ -3,8 +3,11 @@
 > 任何 Agent、任何電腦接手前**必讀**；收工時**必更新**。
 
 ## ⏯️ 目前做到哪
-Antigravity 已推送 v0.1.4（`feat(mcp): implement updateNote with batch upload & backup mechanism`），含新的 RDQ 規格卡 `RDQ-spec-modify-note-20260730.md`。本地已 pull 同步。
-本階段實作了 `append-web`、`append-image` 及 `sub submit` 三項功能，並擴充至 CLI 及 MCP。處理了作業繳交時 `thumbnails is missing` 的問題（動態上傳 1x1 透明佔位圖），並修正了 npm workspaces 版本連結的相關問題。
+目前已實作了自動攔截 `401 Unauthorized` 錯誤並透過 CDP 進行背景刷新 Token 的機制 (`refreshAuthToken`)。
+目前已實作了自動攔截 `401 Unauthorized` 錯誤並透過 CDP 進行背景刷新 Token 的機制 (`refreshAuthToken`)。
+緊接著我們實作了 MCP Resources 介面，註冊了 4 個 `loilonote://` 資源端點（課程、筆記清單、單篇筆記、作業箱），讓 AI 能夠直接將內容庫作為上下文讀取。
+並且我們進一步實作了 MCP Prompts 介面，提供了 `loilonote_review_submission` 與 `loilonote_summarize_note` 兩個指令範本，能自動載入指定筆記並附加老師/助教的系統提示，實現一鍵自動批改與摘要。
+最後，我們實作了「班級成員名單 API」，並加入了強制性的「去識別化（Anonymization）」機制。透過 Regex 擷取學生座號，統一將姓名替換為 `stuXX` 的代號（例如：stu01），保障個資安全，同時供 AI 與教師無縫對照。
 
 ### 套件名稱
 - `@samcct-bit/loilonote-core`
@@ -31,16 +34,17 @@ loilonote-mcp                # 啟動 MCP Server（給 AI Agent）
 安全機制：每次透過 MCP 寫入筆記前，都會自動在本地 `~/.loilonote/backups/` 產生完整 ZIP 備份。
 
 ## ➡️ 下一步
+## ➡️ 下一步
+## ➡️ 下一步
 1. 收集使用者回饋，優化卡片新增 (append) 與覆寫 (replace) 的邏輯切換（例如自動排版）。
-2. 在 `submitNote` 中，考慮實作從筆記內頁提取真實縮圖，取代目前的透明佔位圖。
-3. 測試 Claude Code / ChatGPT MCP 整合。
+2. 利用班級名單實作「批次批改作業」的自動化腳本或進階指令。
+3. 視需要將專案發布至 npm。
 
 ## ⚠️ 注意事項
 - npm publish 在 workspace 內會 JSON 解析錯誤，需從暫存目錄發布
-- Token 24h 過期，重登：`loilonote login`
 - `opencode mcp list` 可查看所有 MCP 狀態，無 restart 子命令，重載需重開 terminal 或改設定觸發
 
 ## 🕐 最後更新
-- 時間：2026-07-31 00:45
+- 時間：2026-07-31 10:04
 - 更新者：Antigravity Agent (協作 OpenCode)
-- Git push：✅ 已推（包含 append/submit 的變更）
+- Git push：尚未推 (等待後續修改一起發布)

@@ -1,4 +1,5 @@
-import { getToken } from './config.js';
+import { getToken, updateToken } from './config.js';
+import { loginWithBrowser } from './cdp-auth.js';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
@@ -12,6 +13,8 @@ export class LoilonoteClient {
   private baseUrl: string;
   private timeout: number;
   private token: string | null;
+  private refreshPromise?: Promise<string>;
+  public onTokenRefreshStart?: () => void;
 
   constructor(baseUrl?: string, timeout?: number) {
     this.baseUrl = baseUrl ?? process.env.LOILONOTE_BASE_URL ?? 'https://n.loilo.tv';
@@ -30,33 +33,61 @@ export class LoilonoteClient {
     return `${url}${sep}auth_token=${encodeURIComponent(token)}`;
   }
 
+  private async refreshAuthToken(): Promise<string> {
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+    if (this.onTokenRefreshStart) {
+      this.onTokenRefreshStart();
+    }
+    this.refreshPromise = loginWithBrowser().then(newToken => {
+      this.setToken(newToken);
+      updateToken(newToken);
+      this.refreshPromise = undefined;
+      return newToken;
+    }).catch(err => {
+      this.refreshPromise = undefined;
+      throw err;
+    });
+    return this.refreshPromise;
+  }
+
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const url = new URL(path, this.baseUrl);
-    const fullUrl = this.appendToken(url.toString());
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeout);
-
-    try {
-      const response = await fetch(fullUrl, {
-        ...init,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          ...init.headers,
-        },
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        const error = await response.text().catch(() => 'Unknown error');
-        throw new Error(`HTTP ${response.status}: ${error}`);
+    
+    const makeFetch = async (targetUrl: string) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), this.timeout);
+      try {
+        return await fetch(targetUrl, {
+          ...init,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...init.headers,
+          },
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timer);
       }
+    };
 
-      return response.json() as T;
-    } finally {
-      clearTimeout(timer);
+    let fullUrl = this.appendToken(url.toString());
+    let response = await makeFetch(fullUrl);
+
+    if (response.status === 401) {
+      await this.refreshAuthToken();
+      fullUrl = this.appendToken(url.toString());
+      response = await makeFetch(fullUrl);
     }
+
+    if (!response.ok) {
+      const error = await response.text().catch(() => 'Unknown error');
+      throw new Error(`HTTP ${response.status}: ${error}`);
+    }
+
+    return response.json() as T;
   }
 
   // --- Auth ---
@@ -78,6 +109,77 @@ export class LoilonoteClient {
     return this.request(`/api/courses/${courseId}`);
   }
 
+  /**
+   * 取得指定課程的學生名單（去識別化）
+   */
+  async listUsers(courseId: number): Promise<any> {
+    const url = new URL(`https://n.loilo.tv/api/courses/${courseId}`);
+    const makeFetch = async (targetUrl: string) => fetch(targetUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json, text/plain, */*',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
+      }
+    });
+
+    let fullUrl = this.appendToken(url.toString());
+    let response = await makeFetch(fullUrl);
+
+    if (response.status === 401) {
+      await this.refreshAuthToken();
+      fullUrl = this.appendToken(url.toString());
+      response = await makeFetch(fullUrl);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to list users: ${response.status} ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as any;
+    const rawUsers = data.students || data.users || [];
+    
+    // 回傳去識別化後的資料
+    return rawUsers
+      .map((u: any) => this.anonymizeUser(u));
+  }
+
+  /**
+   * 將單一使用者去識別化 (轉為 stu01 格式)
+   */
+  private anonymizeUser(user: any): any {
+    const name = user.display_name || user.first_name || '';
+    let seatNumStr = '';
+
+    // 1. 嘗試從名字開頭提取數字 (例如 "01王大明", "10501 王大明", "18 陳妍喬")
+    const match = name.match(/^(\d+)/);
+    if (match) {
+      // 如果數字很長（像是學號 10501），我們可以只取最後兩碼作為座號，或是直接用
+      // 但為了安全，如果數字小於 100，直接當座號；否則取最後兩碼
+      const num = parseInt(match[1], 10);
+      if (num > 100) {
+        seatNumStr = String(num % 100);
+      } else {
+        seatNumStr = String(num);
+      }
+    } 
+    // 2. 如果名字沒有數字，使用系統的 sort_key
+    else if (user.sort_key) {
+      seatNumStr = user.sort_key;
+    } 
+    // 3. Fallback
+    else {
+      seatNumStr = '99';
+    }
+
+    const paddedSeat = seatNumStr.padStart(2, '0');
+    return {
+      user_id: user.id,
+      seat_number: paddedSeat,
+      anonymized_name: `stu${paddedSeat}`,
+      is_graduated: user.is_graduated
+    };
+  }
+
   // --- Notes ---
   async listNotes(courseId: number, orderBy: string = 'update_time_desc'): Promise<NotesListResponse> {
     return this.request(`/api/notes/v2?course_id=${courseId}&order_by=${orderBy}`);
@@ -85,8 +187,18 @@ export class LoilonoteClient {
 
   async getNote(noteId: number): Promise<ArrayBuffer> {
     const url = new URL(`/api/notes/${noteId}`, this.baseUrl);
-    const fullUrl = this.appendToken(url.toString());
-    const response = await fetch(fullUrl);
+    
+    const makeFetch = async (targetUrl: string) => fetch(targetUrl);
+
+    let fullUrl = this.appendToken(url.toString());
+    let response = await makeFetch(fullUrl);
+
+    if (response.status === 401) {
+      await this.refreshAuthToken();
+      fullUrl = this.appendToken(url.toString());
+      response = await makeFetch(fullUrl);
+    }
+
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.arrayBuffer();
   }
@@ -148,20 +260,29 @@ export class LoilonoteClient {
   async updateNote(courseId: number, noteId: number, version: number, zipBuffer: Buffer): Promise<void> {
     const fetchUrl = `https://n.loilo.tv/api/notes/upload`;
     
-    const formData = new FormData();
-    formData.append('id', noteId.toString());
-    formData.append('course_id', courseId.toString());
-    formData.append('version', version.toString());
-    
-    const blob = new Blob([zipBuffer], { type: 'application/zip' });
-    formData.append('data', blob, 'note.zip');
-    formData.append('assets', '[]');
-    formData.append('auth_token', this.token ?? getToken() ?? '');
+    const makeFetch = async (token: string) => {
+      const formData = new FormData();
+      formData.append('id', noteId.toString());
+      formData.append('course_id', courseId.toString());
+      formData.append('version', version.toString());
+      
+      const blob = new Blob([zipBuffer], { type: 'application/zip' });
+      formData.append('data', blob, 'note.zip');
+      formData.append('assets', '[]');
+      formData.append('auth_token', token);
 
-    const res = await fetch(fetchUrl, {
-      method: 'POST',
-      body: formData
-    });
+      return fetch(fetchUrl, {
+        method: 'POST',
+        body: formData
+      });
+    };
+
+    let res = await makeFetch(this.token ?? getToken() ?? '');
+    
+    if (res.status === 401) {
+       const newToken = await this.refreshAuthToken();
+       res = await makeFetch(newToken);
+    }
     
     if (!res.ok) {
         const error = await res.text().catch(() => 'Unknown error');
@@ -172,9 +293,8 @@ export class LoilonoteClient {
   // --- Assets & Media ---
   async uploadGenericFile(buffer: Buffer, extension: string): Promise<{ id: number }> {
     const url = new URL(`/api/generic_files?extension=${encodeURIComponent(extension)}`, this.baseUrl);
-    const fullUrl = this.appendToken(url.toString());
-
-    const res = await fetch(fullUrl, {
+    
+    const makeFetch = async (targetUrl: string) => fetch(targetUrl, {
       method: 'POST',
       headers: {
         'Content-Type': extension === '.png' ? 'image/png' : 'application/octet-stream',
@@ -182,6 +302,16 @@ export class LoilonoteClient {
       },
       body: buffer
     });
+
+    let fullUrl = this.appendToken(url.toString());
+    let res = await makeFetch(fullUrl);
+
+    if (res.status === 401) {
+       await this.refreshAuthToken();
+       fullUrl = this.appendToken(url.toString());
+       res = await makeFetch(fullUrl);
+    }
+
     if (!res.ok) {
       const error = await res.text().catch(() => 'Unknown error');
       throw new Error(`HTTP ${res.status}: ${error}`);
@@ -191,18 +321,25 @@ export class LoilonoteClient {
 
   async createAsset(req: CreateAssetRequest): Promise<AssetResponse> {
     // The API expects a JSON body with generic_file_id, page_count, metadata, thumbnails, auth_token
-    const payload = {
-      ...req,
-      auth_token: this.token ?? getToken() ?? ''
+    const makeFetch = async (token: string) => {
+      const payload = { ...req, auth_token: token };
+      return fetch(this.baseUrl + '/api/assets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
+        },
+        body: JSON.stringify(payload)
+      });
     };
-    const res = await fetch(this.baseUrl + '/api/assets', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
-      },
-      body: JSON.stringify(payload)
-    });
+
+    let res = await makeFetch(this.token ?? getToken() ?? '');
+
+    if (res.status === 401) {
+       const newToken = await this.refreshAuthToken();
+       res = await makeFetch(newToken);
+    }
+
     if (!res.ok) {
       const error = await res.text().catch(() => 'Unknown error');
       throw new Error(`HTTP ${res.status}: ${error}`);
@@ -292,16 +429,25 @@ export class LoilonoteClient {
     const dummyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
     const { id: dummyId } = await this.uploadGenericFile(dummyPng, '.png');
 
-    const formData = new FormData();
-    const blob = new Blob([zipBuffer], { type: 'application/zip' });
-    formData.append('data', blob, 'note.zip');
-    formData.append('thumbnails', JSON.stringify([{ index: 0, small: dummyId, medium: dummyId }]));
-    formData.append('auth_token', this.token ?? getToken() ?? '');
+    const makeFetch = async (token: string) => {
+      const formData = new FormData();
+      const blob = new Blob([zipBuffer], { type: 'application/zip' });
+      formData.append('data', blob, 'note.zip');
+      formData.append('thumbnails', JSON.stringify([{ index: 0, small: dummyId, medium: dummyId }]));
+      formData.append('auth_token', token);
 
-    const res = await fetch(fetchUrl, {
-      method: 'POST',
-      body: formData
-    });
+      return fetch(fetchUrl, {
+        method: 'POST',
+        body: formData
+      });
+    };
+
+    let res = await makeFetch(this.token ?? getToken() ?? '');
+    
+    if (res.status === 401) {
+       const newToken = await this.refreshAuthToken();
+       res = await makeFetch(newToken);
+    }
     
     if (!res.ok) {
         const error = await res.text().catch(() => 'Unknown error');

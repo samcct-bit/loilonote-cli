@@ -67,3 +67,9 @@ export function getToken(): string | null {
   }
   return null;
 }
+
+export function updateToken(token: string): void {
+  const config = loadConfig();
+  config.auth.token = token;
+  saveConfig(config);
+}

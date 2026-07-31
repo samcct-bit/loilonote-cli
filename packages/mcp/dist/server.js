@@ -1,4 +1,4 @@
-import { McpServer } from '@modelcontextprotocol/server';
+import { McpServer, ResourceTemplate } from '@modelcontextprotocol/server';
 import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
 import { z } from 'zod';
 import { LoilonoteClient, NoteBuilder } from '@samcct-bit/loilonote-core';
@@ -305,6 +305,153 @@ server.registerTool('loilonote_sub_submit', {
     const buf = await client.packNote(parsed);
     await client.submitNote(cid, sid, buf);
     return { content: [{ type: 'text', text: `筆記 ${nid} 已成功繳交至課程 ${cid} 的作業箱 #${sid}！` }] };
+});
+// --- Resource: 列出課程 ---
+server.registerResource('loilonote_courses', 'loilonote://courses', { title: '課程列表', description: '所有 Loilonote 課程與班級群組（JSON 格式）', mimeType: 'application/json' }, async (uri) => {
+    const client = getClient();
+    const result = await client.listCourses();
+    return {
+        contents: [{
+                uri: uri.href,
+                mimeType: 'application/json',
+                text: JSON.stringify(result, null, 2)
+            }]
+    };
+});
+// --- Resource: 課程筆記列表 ---
+server.registerResource('loilonote_course_notes', new ResourceTemplate('loilonote://courses/{courseId}/notes', { list: undefined }), { title: '課程筆記列表', description: '特定課程內的所有筆記清單（JSON 格式）', mimeType: 'application/json' }, async (uri, variables) => {
+    const client = getClient();
+    const courseIdStr = String(variables?.courseId || '');
+    const courseId = await resolveCourseId(client, courseIdStr);
+    const result = await client.listNotes(courseId);
+    return {
+        contents: [{
+                uri: uri.href,
+                mimeType: 'application/json',
+                text: JSON.stringify(result, null, 2)
+            }]
+    };
+});
+// --- Resource: 單篇筆記內容 ---
+server.registerResource('loilonote_note_detail', new ResourceTemplate('loilonote://courses/{courseId}/notes/{noteId}', { list: undefined }), { title: '單篇筆記內容', description: '讀取特定筆記的完整結構與所有純文字內容（JSON 格式）', mimeType: 'application/json' }, async (uri, variables) => {
+    const client = getClient();
+    const courseIdStr = String(variables?.courseId || '');
+    const noteIdStr = String(variables?.noteId || '');
+    const courseId = await resolveCourseId(client, courseIdStr);
+    const noteId = await resolveNoteId(client, courseId, noteIdStr);
+    const parsed = await client.getParsedNote(noteId);
+    const textContent = client.extractText(parsed);
+    const frames = parsed.body.data.frames.map(f => ({
+        type: f.type,
+        position: `${f.metadata.position.left.toFixed(0)},${f.metadata.position.top.toFixed(0)}`,
+        size: `${f.content.size.width}x${f.content.size.height}`,
+        gadgets: Object.keys(f.gadgets),
+    }));
+    const result = {
+        version: parsed.version,
+        frameCount: parsed.frameCount,
+        frameTypes: parsed.frameTypes,
+        textContent: textContent,
+        frames: frames
+    };
+    return {
+        contents: [{
+                uri: uri.href,
+                mimeType: 'application/json',
+                text: JSON.stringify(result, null, 2)
+            }]
+    };
+});
+// --- Resource: 課程繳交作業匣 ---
+server.registerResource('loilonote_course_submissions', new ResourceTemplate('loilonote://courses/{courseId}/submissions', { list: undefined }), { title: '課程繳交作業匣', description: '特定課程內的所有作業箱清單（JSON 格式）', mimeType: 'application/json' }, async (uri, variables) => {
+    const client = getClient();
+    const courseIdStr = String(variables?.courseId || '');
+    const courseId = await resolveCourseId(client, courseIdStr);
+    const result = await client.listSubmissions(courseId);
+    return {
+        contents: [{
+                uri: uri.href,
+                mimeType: 'application/json',
+                text: JSON.stringify(result, null, 2)
+            }]
+    };
+});
+// --- Resource: 班級成員名單 (去識別化) ---
+server.registerResource('loilonote_course_users', new ResourceTemplate('loilonote://courses/{courseId}/users', { list: undefined }), { title: '班級成員名單 (去識別化)', description: '讀取特定課程內的學生名單，且姓名已自動去識別化轉換為 stuXX 格式，保護個資。', mimeType: 'application/json' }, async (uri, variables) => {
+    const client = getClient();
+    const courseIdStr = String(variables?.courseId || '');
+    const courseId = await resolveCourseId(client, courseIdStr);
+    const result = await client.listUsers(courseId);
+    return {
+        contents: [{
+                uri: uri.href,
+                mimeType: 'application/json',
+                text: JSON.stringify(result, null, 2)
+            }]
+    };
+});
+server.registerResource('loilonote_course_submissions', new ResourceTemplate('loilonote://courses/{courseId}/submissions', { list: undefined }), { title: '課程繳交作業匣', description: '特定課程內的所有作業箱清單（JSON 格式）', mimeType: 'application/json' }, async (uri, variables) => {
+    const client = getClient();
+    const courseIdStr = String(variables?.courseId || '');
+    const courseId = await resolveCourseId(client, courseIdStr);
+    const result = await client.listSubmissions(courseId);
+    return {
+        contents: [{
+                uri: uri.href,
+                mimeType: 'application/json',
+                text: JSON.stringify(result, null, 2)
+            }]
+    };
+});
+// --- Prompt: 批改作業 ---
+server.registerPrompt('loilonote_review_submission', {
+    description: '扮演老師，針對指定的作業筆記自動提取內容並提供批改評語與建議',
+    argsSchema: {
+        courseId: z.string().describe('課程名稱或 ID'),
+        noteId: z.string().describe('作業筆記名稱或 ID')
+    }
+}, async (args) => {
+    const client = getClient();
+    const courseId = await resolveCourseId(client, String(args.courseId));
+    const noteId = await resolveNoteId(client, courseId, String(args.noteId));
+    const parsed = await client.getParsedNote(noteId);
+    const textContent = client.extractText(parsed);
+    return {
+        messages: [
+            {
+                role: 'user',
+                content: {
+                    type: 'text',
+                    text: `請扮演一位專業且充滿熱忱的教師，幫我批改學生的這份作業。\n\n【作業內容】\n---\n${textContent || '(無文字內容)'}\n---\n\n請給予：\n1. 具體且具鼓勵性的評語。\n2. 改進建議。\n3. 建議的給分（0~100）。`
+                }
+            }
+        ]
+    };
+});
+// --- Prompt: 重點摘要筆記 ---
+server.registerPrompt('loilonote_summarize_note', {
+    description: '扮演助教，將指定的教材或筆記內容重新排版，整理出學習重點與綱要',
+    argsSchema: {
+        courseId: z.string().describe('課程名稱或 ID'),
+        noteId: z.string().describe('作業筆記名稱或 ID')
+    }
+}, async (args) => {
+    const client = getClient();
+    const courseId = await resolveCourseId(client, String(args.courseId));
+    const noteId = await resolveNoteId(client, courseId, String(args.noteId));
+    const parsed = await client.getParsedNote(noteId);
+    const textContent = client.extractText(parsed);
+    return {
+        messages: [
+            {
+                role: 'user',
+                content: {
+                    type: 'text',
+                    text: `請扮演一位專業的助教，將這份教材/筆記重新整理。\n\n【筆記內容】\n---\n${textContent || '(無文字內容)'}\n---\n\n請幫我整理出：\n1. 3~5 個核心學習重點。\n2. 條列式的內容綱要，方便學生快速複習。`
+                }
+            }
+        ]
+    };
 });
 // --- Entry point ---
 async function main() {

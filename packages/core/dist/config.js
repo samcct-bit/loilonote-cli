@@ -67,4 +67,9 @@ export function getToken() {
     }
     return null;
 }
+export function updateToken(token) {
+    const config = loadConfig();
+    config.auth.token = token;
+    saveConfig(config);
+}
 //# sourceMappingURL=config.js.map
