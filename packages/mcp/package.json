@@ -1,6 +1,6 @@
 {
   "name": "@samcct-bit/loilonote-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "description": "Loilonote MCP Server — 讓 AI Agent 直接操作 Loilonote（課程/筆記/繳交作業）",
   "bin": {
@@ -19,7 +19,7 @@
     "@modelcontextprotocol/server": "^2.0.0",
     "zod": "^4.0.0",
     "adm-zip": "^0.5.0",
-    "@samcct-bit/loilonote-core": "^0.2.0"
+    "@samcct-bit/loilonote-core": "^0.3.0"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.0",
