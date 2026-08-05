@@ -34,11 +34,9 @@ loilonote-mcp                # 啟動 MCP Server（給 AI Agent）
 安全機制：每次透過 MCP 寫入筆記前，都會自動在本地 `~/.loilonote/backups/` 產生完整 ZIP 備份。
 
 ## ➡️ 下一步
-## ➡️ 下一步
-## ➡️ 下一步
-1. 收集使用者回饋，優化卡片新增 (append) 與覆寫 (replace) 的邏輯切換（例如自動排版）。
-2. 利用班級名單實作「批次批改作業」的自動化腳本或進階指令。
-3. 視需要將專案發布至 npm。
+1. 利用班級名單實作「批次批改作業」的自動化腳本或進階指令。
+2. 視需要將 Token 傳遞方式從 Query String 改為 HTTP Authorization Header（需先驗證所有 API 端點支援）。
+3. 考慮加入 e2e 測試腳本（模擬 MCP 協議）以保障未來重構安全性。
 
 ## ⚠️ 注意事項
 - npm publish 在 workspace 內會 JSON 解析錯誤，需從暫存目錄發布
@@ -47,4 +45,4 @@ loilonote-mcp                # 啟動 MCP Server（給 AI Agent）
 ## 🕐 最後更新
 - 時間：2026-07-31 10:04
 - 更新者：Antigravity Agent (協作 OpenCode)
-- Git push：尚未推 (等待後續修改一起發布)
+- Git push：已推 (v0.2.0 發布完成)

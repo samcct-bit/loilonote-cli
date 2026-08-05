@@ -1,4 +1,4 @@
-import type { NotesListResponse, SubmissionsResponse, LoilonoteSession, CourseGroup, CourseDetail, ParsedNote, OgpResponse, CreateAssetRequest, AssetResponse } from './types.js';
+import type { NotesListResponse, SubmissionsResponse, LoilonoteSession, CourseGroup, CourseDetail, ParsedNote, OgpResponse, CreateAssetRequest, AssetResponse, AnonymizedUser } from './types.js';
 export declare class LoilonoteClient {
     private baseUrl;
     private timeout;
@@ -14,11 +14,13 @@ export declare class LoilonoteClient {
     listCourses(): Promise<CourseGroup | CourseGroup[]>;
     getCourse(courseId: number): Promise<CourseDetail>;
     /**
-     * 取得指定課程的學生名單（去識別化）
+     * 取得指定課程的學生名單（去識別化），座號唯一且排序。
      */
-    listUsers(courseId: number): Promise<any>;
+    listUsers(courseId: number): Promise<AnonymizedUser[]>;
     /**
      * 將單一使用者去識別化 (轉為 stu01 格式)
+     * 策略：優先使用平台的 sort_key（最可靠），名字開頭數字只作補充。
+     * user_id 只保留於私有回傳物件中，不對外暴露。
      */
     private anonymizeUser;
     listNotes(courseId: number, orderBy?: string): Promise<NotesListResponse>;

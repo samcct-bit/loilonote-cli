@@ -217,4 +217,9 @@ export interface ParsedNote {
     frameCount: number;
     frameTypes: string[];
 }
+export interface AnonymizedUser {
+    anonymized_name: string;
+    seat_number: string;
+    is_graduated: boolean;
+}
 //# sourceMappingURL=types.d.ts.map

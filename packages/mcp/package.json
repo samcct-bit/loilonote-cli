@@ -19,7 +19,7 @@
     "@modelcontextprotocol/server": "^2.0.0",
     "zod": "^4.0.0",
     "adm-zip": "^0.5.0",
-    "@samcct-bit/loilonote-core": "^0.1.4"
+    "@samcct-bit/loilonote-core": "^0.2.0"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.0",

@@ -6,11 +6,36 @@ import { resolveCourseId, resolveNoteId } from './resolver.js';
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { createRequire } from 'node:module';
+
+const _require = createRequire(import.meta.url);
+const _pkg = _require('../../package.json') as { version: string };
+
+/**
+ * 統一的錯誤處理包裝器，確保 Tool Handler 的錯誤以 AI 可讀的格式回傳
+ */
+function safeHandler<T extends (...args: any[]) => Promise<{ content: any[] }>>(
+  fn: T
+): T {
+  return (async (...args: any[]) => {
+    try {
+      return await fn(...args);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('[MCP Tool Error]', message);
+      return {
+        content: [{ type: 'text' as const, text: `❌ 操作失敗：${message}` }],
+        isError: true,
+      };
+    }
+  }) as T;
+}
 
 const server = new McpServer({
   name: 'loilonote',
-  version: '0.1.0',
+  version: _pkg.version,
 });
+
 
 function getClient(): LoilonoteClient {
   return new LoilonoteClient();
@@ -20,7 +45,7 @@ function getClient(): LoilonoteClient {
 server.registerTool(
   'loilonote_course_list',
   { description: '列出所有 Loilonote 課程（依班級分組）' },
-  async () => {
+  safeHandler(async () => {
     const result = await getClient().listCourses();
     const groups = Array.isArray(result) ? result : [result];
     const text = groups.map(g =>
@@ -28,7 +53,7 @@ server.registerTool(
       g.courses.map(c => `- [${c.course_id}] ${c.name}${c.in_charge ? ' (教師)' : ''}`).join('\n')
     ).join('\n\n');
     return { content: [{ type: 'text' as const, text }] };
-  }
+  })
 );
 
 // --- Tool: 列出筆記 ---
@@ -38,7 +63,7 @@ server.registerTool(
     description: '列出指定課程中的所有筆記（含名稱、版本、更新時間、縮圖）',
     inputSchema: { course: z.union([z.string(), z.number()]).describe('課程名稱或 ID') },
   },
-  async ({ course }) => {
+  safeHandler(async ({ course }) => {
     const client = getClient();
     const courseId = await resolveCourseId(client, course);
     const result = await client.listNotes(courseId);
@@ -46,7 +71,7 @@ server.registerTool(
       `- [${n.id}] ${n.name}  v${n.version}  ${n.updated_at}`
     ).join('\n');
     return { content: [{ type: 'text' as const, text: text || '（無筆記）' }] };
-  }
+  })
 );
 
 // --- Tool: 取得筆記資訊 ---
@@ -59,7 +84,7 @@ server.registerTool(
       note: z.union([z.string(), z.number()]).describe('筆記名稱或 ID'),
     },
   },
-  async ({ course, note }) => {
+  safeHandler(async ({ course, note }) => {
     const client = getClient();
     const courseId = await resolveCourseId(client, course);
     const noteId = await resolveNoteId(client, courseId, note);
@@ -79,7 +104,7 @@ server.registerTool(
       thumbnail_small: targetNote.thumbnail?.small?.url ?? null,
     };
     return { content: [{ type: 'text' as const, text: JSON.stringify(info, null, 2) }] };
-  }
+  })
 );
 
 // --- Tool: 列出繳交作業 ---
@@ -89,7 +114,7 @@ server.registerTool(
     description: '列出指定課程的所有繳交作業（含名稱、開放時間、截止時間）',
     inputSchema: { course: z.union([z.string(), z.number()]).describe('課程名稱或 ID') },
   },
-  async ({ course }) => {
+  safeHandler(async ({ course }) => {
     const client = getClient();
     const courseId = await resolveCourseId(client, course);
     const result = await client.listSubmissions(courseId);
@@ -98,7 +123,7 @@ server.registerTool(
       return `- [#${s.submission_number}] ${s.message || '(無標題)'}  ${status}`;
     }).join('\n');
     return { content: [{ type: 'text' as const, text: text || '（無繳交作業）' }] };
-  }
+  })
 );
 
 // --- Tool: 下載筆記檔案 ---
@@ -111,7 +136,7 @@ server.registerTool(
       note: z.union([z.string(), z.number()]).describe('筆記名稱或 ID') 
     },
   },
-  async ({ course, note }) => {
+  safeHandler(async ({ course, note }) => {
     const client = getClient();
     let nid: number;
     if (typeof note === 'number') {
@@ -124,7 +149,7 @@ server.registerTool(
     const data = await client.getNote(nid);
     const text = `筆記 ${nid} 下載完成，大小 ${(data.byteLength / 1024).toFixed(1)} KB（ZIP 格式，內含卡片頁面與多媒體附件）`;
     return { content: [{ type: 'text' as const, text }] };
-  }
+  })
 );
 
 // --- Tool: 解析筆記結構 ---
@@ -137,7 +162,7 @@ server.registerTool(
       note: z.union([z.string(), z.number()]).describe('筆記名稱或 ID') 
     },
   },
-  async ({ course, note }) => {
+  safeHandler(async ({ course, note }) => {
     const client = getClient();
     let nid: number;
     if (typeof note === 'number') {
@@ -165,7 +190,7 @@ server.registerTool(
         frames,
       }, null, 2),
     }] };
-  }
+  })
 );
 
 // --- Tool: 提取筆記文字 ---
@@ -178,7 +203,7 @@ server.registerTool(
       note: z.union([z.string(), z.number()]).describe('筆記名稱或 ID') 
     },
   },
-  async ({ course, note }) => {
+  safeHandler(async ({ course, note }) => {
     const client = getClient();
     let nid: number;
     if (typeof note === 'number') {
@@ -191,7 +216,7 @@ server.registerTool(
     const parsed = await client.getParsedNote(nid);
     const text = client.extractText(parsed);
     return { content: [{ type: 'text' as const, text: text || '(無文字內容)' }] };
-  }
+  })
 );
 
 // --- Tool: 修改筆記內容 ---
@@ -206,7 +231,7 @@ server.registerTool(
       action: z.enum(['append', 'replace']).default('append').describe('append: 新增卡片放置於最下方, replace: 覆寫第一張卡片內容')
     },
   },
-  async ({ course, note, newText, action }) => {
+  safeHandler(async ({ course, note, newText, action }) => {
     const client = getClient();
     
     // 名稱解析
@@ -286,7 +311,7 @@ server.registerTool(
     
     const text = `成功更新筆記 ${noteId} (${action})！\n(已自動備份原始檔案至: ${backupPath})`;
     return { content: [{ type: 'text' as const, text }] };
-  }
+  })
 );
 
 // --- Tool: 附加網頁卡片 ---
@@ -300,7 +325,7 @@ server.registerTool(
       url: z.string().describe('網址')
     }
   },
-  async ({ course, note, url }) => {
+  safeHandler(async ({ course, note, url }) => {
     const client = getClient();
     const cid = course ? await resolveCourseId(client, course) : 0;
     const nid = await resolveNoteId(client, cid, note);
@@ -314,7 +339,7 @@ server.registerTool(
     const buf = await client.packNote(parsed);
     await client.updateNote(cid, nid, parsed.version, buf);
     return { content: [{ type: 'text' as const, text: `網頁卡片已成功附加！\n(已自動備份至: ${backupPath})` }] };
-  }
+  })
 );
 
 // --- Tool: 附加圖片卡片 ---
@@ -328,7 +353,7 @@ server.registerTool(
       filepath: z.string().describe('本機圖片檔案之絕對路徑')
     }
   },
-  async ({ course, note, filepath }) => {
+  safeHandler(async ({ course, note, filepath }) => {
     const client = getClient();
     const cid = course ? await resolveCourseId(client, course) : 0;
     const nid = await resolveNoteId(client, cid, note);
@@ -351,7 +376,7 @@ server.registerTool(
     const buf = await client.packNote(parsed);
     await client.updateNote(cid, nid, parsed.version, buf);
     return { content: [{ type: 'text' as const, text: `圖片卡片已成功附加！\n(已自動備份至: ${backupPath})` }] };
-  }
+  })
 );
 
 // --- Tool: 繳交作業 ---
@@ -365,7 +390,7 @@ server.registerTool(
       note: z.union([z.string(), z.number()]).describe('要繳交的筆記名稱或 ID')
     }
   },
-  async ({ course, submissionId, note }) => {
+  safeHandler(async ({ course, submissionId, note }) => {
     const client = getClient();
     const cid = await resolveCourseId(client, course);
     const nid = await resolveNoteId(client, cid, note);
@@ -375,7 +400,7 @@ server.registerTool(
     const buf = await client.packNote(parsed);
     await client.submitNote(cid, sid, buf);
     return { content: [{ type: 'text' as const, text: `筆記 ${nid} 已成功繳交至課程 ${cid} 的作業箱 #${sid}！` }] };
-  }
+  })
 );
 
 // --- Resource: 列出課程 ---
@@ -496,25 +521,6 @@ server.registerResource(
     };
   }
 );
-server.registerResource(
-  'loilonote_course_submissions',
-  new ResourceTemplate('loilonote://courses/{courseId}/submissions', { list: undefined }),
-  { title: '課程繳交作業匣', description: '特定課程內的所有作業箱清單（JSON 格式）', mimeType: 'application/json' },
-  async (uri, variables) => {
-    const client = getClient();
-    const courseIdStr = String(variables?.courseId || '');
-    const courseId = await resolveCourseId(client, courseIdStr);
-    const result = await client.listSubmissions(courseId);
-    return {
-      contents: [{
-        uri: uri.href,
-        mimeType: 'application/json',
-        text: JSON.stringify(result, null, 2)
-      }]
-    };
-  }
-);
-
 // --- Prompt: 批改作業 ---
 server.registerPrompt(
   'loilonote_review_submission',

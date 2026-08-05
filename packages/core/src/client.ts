@@ -6,7 +6,8 @@ import * as os from 'node:os';
 import type {
   NotesListResponse, SubmissionsResponse, LoilonoteSession,
   CourseGroup, CourseDetail, ParsedNote, NoteBody, NoteHeader,
-  OgpResponse, CreateAssetRequest, AssetResponse
+  OgpResponse, CreateAssetRequest, AssetResponse,
+  AnonymizedUser, UserProfile
 } from './types.js';
 
 export class LoilonoteClient {
@@ -110,73 +111,73 @@ export class LoilonoteClient {
   }
 
   /**
-   * 取得指定課程的學生名單（去識別化）
+   * 取得指定課程的學生名單（去識別化），座號唯一且排序。
    */
-  async listUsers(courseId: number): Promise<any> {
-    const url = new URL(`https://n.loilo.tv/api/courses/${courseId}`);
-    const makeFetch = async (targetUrl: string) => fetch(targetUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json, text/plain, */*',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36',
+  async listUsers(courseId: number): Promise<AnonymizedUser[]> {
+    // 直接呼叫 this.request()，重用其 token、retry 與 timeout 機制
+    const data = await this.request<CourseDetail>(`/api/courses/${courseId}`);
+    const rawUsers = data.students || [];
+
+    // 去識別化
+    const anonymized = rawUsers.map(u => this.anonymizeUser(u));
+
+    // 確保座號唯一：若有重複，加上 B/C 後綴
+    const seatCount = new Map<string, number>();
+    for (const u of anonymized) {
+      seatCount.set(u.seat_number, (seatCount.get(u.seat_number) ?? 0) + 1);
+    }
+    const seatSuffix = new Map<string, number>();
+    const uniqueAnonymized = anonymized.map(u => {
+      if ((seatCount.get(u.seat_number) ?? 0) > 1) {
+        const suffixIdx = seatSuffix.get(u.seat_number) ?? 0;
+        seatSuffix.set(u.seat_number, suffixIdx + 1);
+        const suffix = suffixIdx === 0 ? 'B' : String.fromCharCode(67 + suffixIdx - 1); // B, C, D...
+        return {
+          anonymized_name: `stu${u.seat_number}${suffix}`,
+          seat_number: u.seat_number,
+          is_graduated: u.is_graduated,
+        };
       }
+      // 只輸出不含 _userId 的乾淨物件
+      const { _userId: _, ...clean } = u;
+      return clean;
     });
 
-    let fullUrl = this.appendToken(url.toString());
-    let response = await makeFetch(fullUrl);
-
-    if (response.status === 401) {
-      await this.refreshAuthToken();
-      fullUrl = this.appendToken(url.toString());
-      response = await makeFetch(fullUrl);
-    }
-
-    if (!response.ok) {
-      throw new Error(`Failed to list users: ${response.status} ${response.statusText}`);
-    }
-
-    const data = (await response.json()) as any;
-    const rawUsers = data.students || data.users || [];
-    
-    // 回傳去識別化後的資料
-    return rawUsers
-      .map((u: any) => this.anonymizeUser(u));
+    // 按 seat_number 升序排序
+    return uniqueAnonymized.sort((a, b) => a.seat_number.localeCompare(b.seat_number, undefined, { numeric: true }));
   }
 
   /**
    * 將單一使用者去識別化 (轉為 stu01 格式)
+   * 策略：優先使用平台的 sort_key（最可靠），名字開頭數字只作補充。
+   * user_id 只保留於私有回傳物件中，不對外暴露。
    */
-  private anonymizeUser(user: any): any {
-    const name = user.display_name || user.first_name || '';
+  private anonymizeUser(user: UserProfile): AnonymizedUser & { _userId: number } {
     let seatNumStr = '';
 
-    // 1. 嘗試從名字開頭提取數字 (例如 "01王大明", "10501 王大明", "18 陳妍喬")
-    const match = name.match(/^(\d+)/);
-    if (match) {
-      // 如果數字很長（像是學號 10501），我們可以只取最後兩碼作為座號，或是直接用
-      // 但為了安全，如果數字小於 100，直接當座號；否則取最後兩碼
-      const num = parseInt(match[1], 10);
-      if (num > 100) {
-        seatNumStr = String(num % 100);
+    // 1. 優先使用 sort_key（平台官方的排序鍵，通常就是座號）
+    if (user.sort_key && user.sort_key.trim() !== '') {
+      seatNumStr = user.sort_key.trim();
+    } else {
+      // 2. 嘗試從 display_name 開頭提取數字（例如 "18 陳妍喬", "01王大明"）
+      const name = user.display_name || user.first_name || '';
+      const match = name.match(/^(\d+)/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        // 如果數字 > 100 (可能是學號)，取最後兩碼
+        seatNumStr = num > 100 ? String(num % 100) : String(num);
       } else {
-        seatNumStr = String(num);
+        // 3. Fallback：使用 user.id 的最後兩碼（確保唯一）
+        seatNumStr = String(user.id % 100);
       }
-    } 
-    // 2. 如果名字沒有數字，使用系統的 sort_key
-    else if (user.sort_key) {
-      seatNumStr = user.sort_key;
-    } 
-    // 3. Fallback
-    else {
-      seatNumStr = '99';
     }
 
     const paddedSeat = seatNumStr.padStart(2, '0');
     return {
-      user_id: user.id,
-      seat_number: paddedSeat,
+      _userId: user.id, // 僅供內部使用，不對 AI 暴露
       anonymized_name: `stu${paddedSeat}`,
-      is_graduated: user.is_graduated
+      seat_number: paddedSeat,
+      is_graduated: user.is_graduated,
     };
   }
 
@@ -188,7 +189,15 @@ export class LoilonoteClient {
   async getNote(noteId: number): Promise<ArrayBuffer> {
     const url = new URL(`/api/notes/${noteId}`, this.baseUrl);
     
-    const makeFetch = async (targetUrl: string) => fetch(targetUrl);
+    const makeFetch = async (targetUrl: string) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), this.timeout);
+      try {
+        return await fetch(targetUrl, { signal: controller.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+    };
 
     let fullUrl = this.appendToken(url.toString());
     let response = await makeFetch(fullUrl);

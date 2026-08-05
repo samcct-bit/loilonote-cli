@@ -215,3 +215,10 @@ export interface ParsedNote {
   frameCount: number;
   frameTypes: string[];
 }
+
+export interface AnonymizedUser {
+  anonymized_name: string; // e.g. "stu01"
+  seat_number: string;     // e.g. "01"
+  is_graduated: boolean;
+  // NOTE: user_id is intentionally NOT exported to protect privacy
+}

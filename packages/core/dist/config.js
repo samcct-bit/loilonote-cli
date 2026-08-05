@@ -50,24 +50,33 @@ export function saveConfig(config) {
         mkdirSync(dir, { recursive: true });
     writeFileSync(configPath(), JSON.stringify(config, null, 2), 'utf-8');
 }
+let _tokenCache = undefined; // undefined = 尚未初始化
 export function getToken() {
     const envToken = process.env.LOILONOTE_TOKEN;
     if (envToken)
         return envToken;
+    if (_tokenCache !== undefined)
+        return _tokenCache;
     const config = loadConfig();
-    if (config.auth.token)
-        return config.auth.token;
+    if (config.auth.token) {
+        _tokenCache = config.auth.token;
+        return _tokenCache;
+    }
     if (config.auth.tokenFile) {
         try {
-            return readFileSync(config.auth.tokenFile, 'utf-8').trim();
+            _tokenCache = readFileSync(config.auth.tokenFile, 'utf-8').trim();
+            return _tokenCache;
         }
         catch {
+            _tokenCache = null;
             return null;
         }
     }
+    _tokenCache = null;
     return null;
 }
 export function updateToken(token) {
+    _tokenCache = token; // 同步更新快取
     const config = loadConfig();
     config.auth.token = token;
     saveConfig(config);

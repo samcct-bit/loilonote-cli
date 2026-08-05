@@ -6,32 +6,53 @@ import { resolveCourseId, resolveNoteId } from './resolver.js';
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
+const _pkg = _require('../../package.json');
+/**
+ * 統一的錯誤處理包裝器，確保 Tool Handler 的錯誤以 AI 可讀的格式回傳
+ */
+function safeHandler(fn) {
+    return (async (...args) => {
+        try {
+            return await fn(...args);
+        }
+        catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.error('[MCP Tool Error]', message);
+            return {
+                content: [{ type: 'text', text: `❌ 操作失敗：${message}` }],
+                isError: true,
+            };
+        }
+    });
+}
 const server = new McpServer({
     name: 'loilonote',
-    version: '0.1.0',
+    version: _pkg.version,
 });
 function getClient() {
     return new LoilonoteClient();
 }
 // --- Tool: 列出課程 ---
-server.registerTool('loilonote_course_list', { description: '列出所有 Loilonote 課程（依班級分組）' }, async () => {
+server.registerTool('loilonote_course_list', { description: '列出所有 Loilonote 課程（依班級分組）' }, safeHandler(async () => {
     const result = await getClient().listCourses();
     const groups = Array.isArray(result) ? result : [result];
     const text = groups.map(g => `## ${g.user_group_name}\n` +
         g.courses.map(c => `- [${c.course_id}] ${c.name}${c.in_charge ? ' (教師)' : ''}`).join('\n')).join('\n\n');
     return { content: [{ type: 'text', text }] };
-});
+}));
 // --- Tool: 列出筆記 ---
 server.registerTool('loilonote_note_list', {
     description: '列出指定課程中的所有筆記（含名稱、版本、更新時間、縮圖）',
     inputSchema: { course: z.union([z.string(), z.number()]).describe('課程名稱或 ID') },
-}, async ({ course }) => {
+}, safeHandler(async ({ course }) => {
     const client = getClient();
     const courseId = await resolveCourseId(client, course);
     const result = await client.listNotes(courseId);
     const text = result.notes.map(n => `- [${n.id}] ${n.name}  v${n.version}  ${n.updated_at}`).join('\n');
     return { content: [{ type: 'text', text: text || '（無筆記）' }] };
-});
+}));
 // --- Tool: 取得筆記資訊 ---
 server.registerTool('loilonote_note_info', {
     description: '從課程筆記列表中查詢特定筆記的詳細資訊（名稱、版本、縮圖URL、權限等）',
@@ -39,7 +60,7 @@ server.registerTool('loilonote_note_info', {
         course: z.union([z.string(), z.number()]).describe('課程名稱或 ID'),
         note: z.union([z.string(), z.number()]).describe('筆記名稱或 ID'),
     },
-}, async ({ course, note }) => {
+}, safeHandler(async ({ course, note }) => {
     const client = getClient();
     const courseId = await resolveCourseId(client, course);
     const noteId = await resolveNoteId(client, courseId, note);
@@ -59,12 +80,12 @@ server.registerTool('loilonote_note_info', {
         thumbnail_small: targetNote.thumbnail?.small?.url ?? null,
     };
     return { content: [{ type: 'text', text: JSON.stringify(info, null, 2) }] };
-});
+}));
 // --- Tool: 列出繳交作業 ---
 server.registerTool('loilonote_submission_list', {
     description: '列出指定課程的所有繳交作業（含名稱、開放時間、截止時間）',
     inputSchema: { course: z.union([z.string(), z.number()]).describe('課程名稱或 ID') },
-}, async ({ course }) => {
+}, safeHandler(async ({ course }) => {
     const client = getClient();
     const courseId = await resolveCourseId(client, course);
     const result = await client.listSubmissions(courseId);
@@ -73,7 +94,7 @@ server.registerTool('loilonote_submission_list', {
         return `- [#${s.submission_number}] ${s.message || '(無標題)'}  ${status}`;
     }).join('\n');
     return { content: [{ type: 'text', text: text || '（無繳交作業）' }] };
-});
+}));
 // --- Tool: 下載筆記檔案 ---
 server.registerTool('loilonote_note_download', {
     description: '下載筆記原始內容（ZIP 格式，包含所有卡片與多媒體附件）',
@@ -81,7 +102,7 @@ server.registerTool('loilonote_note_download', {
         course: z.union([z.string(), z.number()]).optional().describe('課程名稱或 ID (若筆記為名稱則必填)'),
         note: z.union([z.string(), z.number()]).describe('筆記名稱或 ID')
     },
-}, async ({ course, note }) => {
+}, safeHandler(async ({ course, note }) => {
     const client = getClient();
     let nid;
     if (typeof note === 'number') {
@@ -96,7 +117,7 @@ server.registerTool('loilonote_note_download', {
     const data = await client.getNote(nid);
     const text = `筆記 ${nid} 下載完成，大小 ${(data.byteLength / 1024).toFixed(1)} KB（ZIP 格式，內含卡片頁面與多媒體附件）`;
     return { content: [{ type: 'text', text }] };
-});
+}));
 // --- Tool: 解析筆記結構 ---
 server.registerTool('loilonote_note_inspect', {
     description: '解析筆記內部結構（版本、卡片類型、頁數、gadget 組成）',
@@ -104,7 +125,7 @@ server.registerTool('loilonote_note_inspect', {
         course: z.union([z.string(), z.number()]).optional().describe('課程名稱或 ID (若筆記為名稱則必填)'),
         note: z.union([z.string(), z.number()]).describe('筆記名稱或 ID')
     },
-}, async ({ course, note }) => {
+}, safeHandler(async ({ course, note }) => {
     const client = getClient();
     let nid;
     if (typeof note === 'number') {
@@ -134,7 +155,7 @@ server.registerTool('loilonote_note_inspect', {
                     frames,
                 }, null, 2),
             }] };
-});
+}));
 // --- Tool: 提取筆記文字 ---
 server.registerTool('loilonote_note_text', {
     description: '從筆記中提取所有純文字內容（合併所有卡片中的文字）',
@@ -142,7 +163,7 @@ server.registerTool('loilonote_note_text', {
         course: z.union([z.string(), z.number()]).optional().describe('課程名稱或 ID (若筆記為名稱則必填)'),
         note: z.union([z.string(), z.number()]).describe('筆記名稱或 ID')
     },
-}, async ({ course, note }) => {
+}, safeHandler(async ({ course, note }) => {
     const client = getClient();
     let nid;
     if (typeof note === 'number') {
@@ -157,7 +178,7 @@ server.registerTool('loilonote_note_text', {
     const parsed = await client.getParsedNote(nid);
     const text = client.extractText(parsed);
     return { content: [{ type: 'text', text: text || '(無文字內容)' }] };
-});
+}));
 // --- Tool: 修改筆記內容 ---
 server.registerTool('loilonote_note_update', {
     description: '修改/覆寫/新增筆記內容。執行前會自動備份原始筆記至 ~/.loilonote/backups/',
@@ -167,7 +188,7 @@ server.registerTool('loilonote_note_update', {
         newText: z.string().describe('要寫入的新文字內容'),
         action: z.enum(['append', 'replace']).default('append').describe('append: 新增卡片放置於最下方, replace: 覆寫第一張卡片內容')
     },
-}, async ({ course, note, newText, action }) => {
+}, safeHandler(async ({ course, note, newText, action }) => {
     const client = getClient();
     // 名稱解析
     const courseId = await resolveCourseId(client, course);
@@ -237,7 +258,7 @@ server.registerTool('loilonote_note_update', {
     await client.updateNote(courseId, noteId, parsed.version, zipBuffer);
     const text = `成功更新筆記 ${noteId} (${action})！\n(已自動備份原始檔案至: ${backupPath})`;
     return { content: [{ type: 'text', text }] };
-});
+}));
 // --- Tool: 附加網頁卡片 ---
 server.registerTool('loilonote_note_append_web', {
     description: '附加一張網頁卡片至筆記。執行前會自動備份原始筆記。',
@@ -246,7 +267,7 @@ server.registerTool('loilonote_note_append_web', {
         note: z.union([z.string(), z.number()]).describe('筆記名稱或 ID'),
         url: z.string().describe('網址')
     }
-}, async ({ course, note, url }) => {
+}, safeHandler(async ({ course, note, url }) => {
     const client = getClient();
     const cid = course ? await resolveCourseId(client, course) : 0;
     const nid = await resolveNoteId(client, cid, note);
@@ -258,7 +279,7 @@ server.registerTool('loilonote_note_append_web', {
     const buf = await client.packNote(parsed);
     await client.updateNote(cid, nid, parsed.version, buf);
     return { content: [{ type: 'text', text: `網頁卡片已成功附加！\n(已自動備份至: ${backupPath})` }] };
-});
+}));
 // --- Tool: 附加圖片卡片 ---
 server.registerTool('loilonote_note_append_image', {
     description: '附加一張本地圖片至筆記。執行前會自動備份原始筆記。',
@@ -267,7 +288,7 @@ server.registerTool('loilonote_note_append_image', {
         note: z.union([z.string(), z.number()]).describe('筆記名稱或 ID'),
         filepath: z.string().describe('本機圖片檔案之絕對路徑')
     }
-}, async ({ course, note, filepath }) => {
+}, safeHandler(async ({ course, note, filepath }) => {
     const client = getClient();
     const cid = course ? await resolveCourseId(client, course) : 0;
     const nid = await resolveNoteId(client, cid, note);
@@ -287,7 +308,7 @@ server.registerTool('loilonote_note_append_image', {
     const buf = await client.packNote(parsed);
     await client.updateNote(cid, nid, parsed.version, buf);
     return { content: [{ type: 'text', text: `圖片卡片已成功附加！\n(已自動備份至: ${backupPath})` }] };
-});
+}));
 // --- Tool: 繳交作業 ---
 server.registerTool('loilonote_sub_submit', {
     description: '將指定的筆記繳交至指定的課程作業箱。',
@@ -296,7 +317,7 @@ server.registerTool('loilonote_sub_submit', {
         submissionId: z.union([z.string(), z.number()]).describe('作業箱 ID（可透過 loilonote_submission_list 取得）'),
         note: z.union([z.string(), z.number()]).describe('要繳交的筆記名稱或 ID')
     }
-}, async ({ course, submissionId, note }) => {
+}, safeHandler(async ({ course, submissionId, note }) => {
     const client = getClient();
     const cid = await resolveCourseId(client, course);
     const nid = await resolveNoteId(client, cid, note);
@@ -305,7 +326,7 @@ server.registerTool('loilonote_sub_submit', {
     const buf = await client.packNote(parsed);
     await client.submitNote(cid, sid, buf);
     return { content: [{ type: 'text', text: `筆記 ${nid} 已成功繳交至課程 ${cid} 的作業箱 #${sid}！` }] };
-});
+}));
 // --- Resource: 列出課程 ---
 server.registerResource('loilonote_courses', 'loilonote://courses', { title: '課程列表', description: '所有 Loilonote 課程與班級群組（JSON 格式）', mimeType: 'application/json' }, async (uri) => {
     const client = getClient();
@@ -382,19 +403,6 @@ server.registerResource('loilonote_course_users', new ResourceTemplate('loilonot
     const courseIdStr = String(variables?.courseId || '');
     const courseId = await resolveCourseId(client, courseIdStr);
     const result = await client.listUsers(courseId);
-    return {
-        contents: [{
-                uri: uri.href,
-                mimeType: 'application/json',
-                text: JSON.stringify(result, null, 2)
-            }]
-    };
-});
-server.registerResource('loilonote_course_submissions', new ResourceTemplate('loilonote://courses/{courseId}/submissions', { list: undefined }), { title: '課程繳交作業匣', description: '特定課程內的所有作業箱清單（JSON 格式）', mimeType: 'application/json' }, async (uri, variables) => {
-    const client = getClient();
-    const courseIdStr = String(variables?.courseId || '');
-    const courseId = await resolveCourseId(client, courseIdStr);
-    const result = await client.listSubmissions(courseId);
     return {
         contents: [{
                 uri: uri.href,
