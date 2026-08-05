@@ -4,7 +4,6 @@
 
 ## ⏯️ 目前做到哪
 目前已實作了自動攔截 `401 Unauthorized` 錯誤並透過 CDP 進行背景刷新 Token 的機制 (`refreshAuthToken`)。
-目前已實作了自動攔截 `401 Unauthorized` 錯誤並透過 CDP 進行背景刷新 Token 的機制 (`refreshAuthToken`)。
 緊接著我們實作了 MCP Resources 介面，註冊了 4 個 `loilonote://` 資源端點（課程、筆記清單、單篇筆記、作業箱），讓 AI 能夠直接將內容庫作為上下文讀取。
 並且我們進一步實作了 MCP Prompts 介面，提供了 `loilonote_review_submission` 與 `loilonote_summarize_note` 兩個指令範本，能自動載入指定筆記並附加老師/助教的系統提示，實現一鍵自動批改與摘要。
 最後，我們實作了「班級成員名單 API」，並加入了強制性的「去識別化（Anonymization）」機制。透過 Regex 擷取學生座號，統一將姓名替換為 `stuXX` 的代號（例如：stu01），保障個資安全，同時供 AI 與教師無縫對照。
@@ -43,6 +42,6 @@ loilonote-mcp                # 啟動 MCP Server（給 AI Agent）
 - `opencode mcp list` 可查看所有 MCP 狀態，無 restart 子命令，重載需重開 terminal 或改設定觸發
 
 ## 🕐 最後更新
-- 時間：2026-07-31 10:04
-- 更新者：Antigravity Agent (協作 OpenCode)
-- Git push：已推 (v0.2.0 發布完成)
+- 時間：2026-08-06 00:10
+- 更新者：Antigravity Agent
+- Git push：已推 (v0.3.0 發布完成)
